@@ -402,7 +402,7 @@
         </div>
 
         <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
-          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/M83S7XXL/" value="https://www.betano.co/bookingcode/M83S7XXL/">
+          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/7UPLY37T/" value="https://www.betano.co/bookingcode/7UPLY37T/">
           <button class="btn btn-betano" style="width: auto; min-width: 180px; padding: 0.85rem 1.4rem;" onclick="analizarLinkBetano()">
             <span>⚡</span> Cargar y Analizar Jugada
           </button>
@@ -512,20 +512,6 @@
             </div>
           </div>
 
-          <!-- Chips de Cuota -->
-          <div class="form-group">
-            <label><span>Atajos de Cuota Variable:</span></label>
-            <div class="quick-chips-row">
-              <span class="chip" onclick="setCuotaDirecta(1.45)">@ 1.45</span>
-              <span class="chip" onclick="setCuotaDirecta(1.65)">@ 1.65</span>
-              <span class="chip active" id="chip180" onclick="setCuotaDirecta(1.80)">@ 1.80</span>
-              <span class="chip" onclick="setCuotaDirecta(2.00)">@ 2.00</span>
-              <span class="chip" onclick="setCuotaDirecta(2.50)">@ 2.50</span>
-              <span class="chip" onclick="setCuotaDirecta(3.45)">@ 3.45</span>
-              <span class="chip" onclick="setCuotaDirecta(7.50)">@ 7.50</span>
-            </div>
-          </div>
-
           <!-- Atajos de Stake Disciplinado (% de tu Caja) -->
           <div class="form-group" style="margin-bottom: 0.95rem;">
             <label style="display: flex; justify-content: space-between; align-items: center;">
@@ -542,15 +528,18 @@
 
           <div class="input-row">
             <div class="form-group">
-              <label><span>Cuota de la Jugada:</span></label>
-              <input type="number" step="0.01" id="dynCuota" value="1.80" oninput="calcularEnVivo()" placeholder="1.80">
+              <label style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Cuota Oficial de Betano:</span>
+                <span class="hint" style="color: #10b981; font-weight: 700;">⚡ Auto-extraída del Link</span>
+              </label>
+              <input type="number" step="0.01" id="dynCuota" value="1.67" oninput="calcularEnVivo()" placeholder="1.67" style="border-color: rgba(255, 94, 0, 0.4); font-weight: 800; font-family: 'JetBrains Mono', monospace; font-size: 1.05rem;">
             </div>
             <div class="form-group" id="grpCosto">
               <label>
                 <span id="lblCosto">Costo / Pérdida a Cubrir:</span>
                 <span class="hint" style="cursor: pointer; color: #38bdf8;" onclick="setCostoCero()">Poner en $0</span>
               </label>
-              <input type="number" id="dynPerdida" value="80000" oninput="calcularEnVivo()" placeholder="0">
+              <input type="number" id="dynPerdida" value="0" oninput="calcularEnVivo()" placeholder="0">
             </div>
           </div>
 
@@ -742,6 +731,24 @@
 
     // --- BASE DE DATOS DE TICKETS Y ANALIZADOR DINÁMICO DE BETANO ---
     const BETANO_DATABASE = {
+      '7UPLY37T': {
+        code: '7UPLY37T',
+        tipo: 'BetBuilder (Creador de Apuesta)',
+        cuota: 1.67,
+        partidos: [
+          { evento: '⚽ Besiktas JK vs Crystal Palace FC', pick: 'Ambos equipos anotan: Sí (@ 1.45) & Goles totales: Más de 2.5 (@ 1.52)', mercado: 'BetBuilder Combinado (Mismo Partido)', odds: 1.67, color: '#ff5e00' }
+        ],
+        cashoutNote: 'Si en el 1er tiempo ambos equipos ya marcaron (1-1), el pick de ambos anotan ya está ganado y solo falta 1 gol para el Más de 2.5. ¡Betano te ofrecerá un Cash Out con más del 70% del premio antes del min 70!'
+      },
+      'YNR3DKV9': {
+        code: 'YNR3DKV9',
+        tipo: 'Simple',
+        cuota: 1.45,
+        partidos: [
+          { evento: '⚽ Besiktas JK vs Crystal Palace FC', pick: 'Sí (Ambos equipos anotan)', mercado: 'Ambos equipos anotarán (1X2)', odds: 1.45, color: '#38bdf8' }
+        ],
+        cashoutNote: 'Apenas ambos equipos marquen su primer gol, la apuesta está GANADA al 100%. No necesitas Cash Out una vez se cumpla.'
+      },
       'M83S7XXL': {
         code: 'M83S7XXL',
         tipo: 'Simple',

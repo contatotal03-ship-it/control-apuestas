@@ -148,15 +148,31 @@ def obtener_info_betano(code_or_url):
                     cuota_total *= float(l.get('odds', 1.0))
 
             partidos = []
+            es_betbuilder = False
             for l in legs:
+                evento = l.get('eventName', 'Partido')
+                if l.get('legItems'):
+                    es_betbuilder = True
+                    items_txt = []
+                    for item in l['legItems']:
+                        m = item.get('market', '')
+                        d = item.get('description', '')
+                        o = float(item.get('odds', 1.0))
+                        items_txt.append(f"{m}: {d} (@{o:.2f})")
+                    pick = " & ".join(items_txt)
+                    mercado = "BetBuilder Combinado"
+                else:
+                    pick = l.get('description', '')
+                    mercado = l.get('market', '')
+
                 partidos.append({
-                    'evento': l.get('eventName', 'Partido'),
-                    'pick': l.get('description', ''),
-                    'mercado': l.get('market', ''),
+                    'evento': evento,
+                    'pick': pick,
+                    'mercado': mercado,
                     'odds': float(l.get('odds', 1.0))
                 })
 
-            tipo_boleto = bets[0].get('typeName', 'Boleto') if bets else f'Combinada de {len(legs)}'
+            tipo_boleto = "BetBuilder (Creador de Apuesta)" if es_betbuilder else (bets[0].get('typeName', 'Boleto') if bets else f'Combinada de {len(legs)}')
             return {
                 'success': True,
                 'code': code,

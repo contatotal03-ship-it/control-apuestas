@@ -318,6 +318,324 @@
       border-radius: 0.35rem; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
       color: #34d399; border: 1px solid rgba(255, 255, 255, 0.08);
     }
+    /* ========================================================= */
+    /* SISTEMA DE MODALES Y NOTIFICACIONES PRO ULTRA-ESTÉTICAS */
+    /* ========================================================= */
+    .pro-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.84);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pro-modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .pro-modal-card {
+      position: relative;
+      max-width: 490px;
+      width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+      background: radial-gradient(circle at 50% 0%, #172554 0%, #0c1527 50%, #030712 100%);
+      border-radius: 1.5rem;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 1.85rem 1.6rem 1.6rem;
+      text-align: center;
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 45px rgba(16, 185, 129, 0.25);
+      transform: scale(0.92) translateY(14px);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s, box-shadow 0.3s;
+    }
+    .pro-modal-overlay.active .pro-modal-card {
+      transform: scale(1) translateY(0);
+    }
+    .pro-modal-card.tipo-cashout {
+      border-color: rgba(245, 158, 11, 0.45);
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 45px rgba(245, 158, 11, 0.25);
+    }
+    .pro-modal-card.tipo-perdida {
+      border-color: rgba(239, 68, 68, 0.4);
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 45px rgba(239, 68, 68, 0.2);
+    }
+    .pro-modal-card.tipo-info {
+      border-color: rgba(56, 189, 248, 0.4);
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.9), 0 0 45px rgba(56, 189, 248, 0.2);
+    }
+    .pro-modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94a3b8;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 10;
+      line-height: 1;
+    }
+    .pro-modal-close:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      transform: scale(1.08);
+    }
+    .pro-confetti-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      border-radius: 1.5rem;
+      z-index: 4;
+    }
+    .pro-badge-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 0.65rem;
+      position: relative;
+      z-index: 6;
+    }
+    .pro-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+    .pro-badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+      animation: proDotPulse 1.6s infinite ease-in-out;
+    }
+    @keyframes proDotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+    .pro-modal-icon-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 0.65rem;
+      position: relative;
+      z-index: 6;
+    }
+    .pro-modal-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.1rem;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+    }
+    .pro-modal-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      margin-bottom: 0.3rem;
+      position: relative;
+      z-index: 6;
+      line-height: 1.2;
+    }
+    .pro-modal-subtitle {
+      font-size: 0.84rem;
+      color: #94a3b8;
+      margin-bottom: 1.15rem;
+      line-height: 1.4;
+      position: relative;
+      z-index: 6;
+    }
+    .pro-metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+      margin-bottom: 1.1rem;
+      text-align: left;
+      position: relative;
+      z-index: 6;
+    }
+    .pro-metric-card {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 0.9rem;
+      padding: 0.75rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .pro-metric-card.full-width {
+      grid-column: span 2;
+    }
+    .pro-metric-card.highlight-green {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 95, 70, 0.28));
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      box-shadow: inset 0 0 15px rgba(16, 185, 129, 0.15);
+    }
+    .pro-metric-card.highlight-bankroll {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(180, 83, 9, 0.22));
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      box-shadow: inset 0 0 15px rgba(245, 158, 11, 0.12);
+    }
+    .pro-metric-label {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pro-metric-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.22rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1.1;
+    }
+    .pro-modal-notes {
+      background: rgba(3, 7, 18, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 0.85rem;
+      padding: 0.75rem 0.95rem;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+      text-align: left;
+      margin-bottom: 1.25rem;
+      position: relative;
+      z-index: 6;
+    }
+    .pro-modal-notes div {
+      margin-bottom: 0.35rem;
+    }
+    .pro-modal-notes div:last-child {
+      margin-bottom: 0;
+    }
+    .pro-modal-actions {
+      display: flex;
+      gap: 0.65rem;
+      position: relative;
+      z-index: 6;
+    }
+    .pro-btn-primary {
+      flex: 1;
+      padding: 0.9rem 1.4rem;
+      border-radius: 0.85rem;
+      border: none;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.98rem;
+      font-weight: 800;
+      color: #fff;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pro-btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.5);
+    }
+    .pro-btn-primary:active {
+      transform: scale(0.98);
+    }
+    .pro-btn-secondary {
+      flex: 1;
+      padding: 0.9rem 1.2rem;
+      border-radius: 0.85rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+    .pro-btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    /* TOASTS NOTIFICATIONS */
+    .pro-toast-container {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 9999999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      max-width: 380px;
+      width: calc(100% - 2rem);
+      pointer-events: none;
+    }
+    .pro-toast {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-left: 4px solid #10b981;
+      border-radius: 0.85rem;
+      padding: 0.85rem 1rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      color: #f8fafc;
+      font-size: 0.85rem;
+      transform: translateX(120%);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .pro-toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .pro-toast.toast-error { border-left-color: #ef4444; }
+    .pro-toast.toast-warning { border-left-color: #f59e0b; }
+    .pro-toast.toast-info { border-left-color: #38bdf8; }
+    .pro-toast-icon { font-size: 1.25rem; line-height: 1; flex-shrink: 0; }
+    .pro-toast-msg { flex: 1; line-height: 1.35; }
   </style>
 </head>
 <body>
@@ -863,13 +1181,340 @@
           • Rescate exacto con cualquier cuota: `/recuperar 80000 1.80`
         </div>
       </div>
+  <!-- ========================================================= -->
+  <!-- SISTEMA DE MODAL CELEBRACIÓN Y NOTIFICACIÓN VIP ULTRA-PRO -->
+  <!-- ========================================================= -->
+  <div id="proModalOverlay" class="pro-modal-overlay" onclick="onOverlayClick(event)">
+    <div class="pro-modal-card" id="proModalCard" onclick="event.stopPropagation()">
+      <button class="pro-modal-close" onclick="cerrarProModal()" aria-label="Cerrar">&times;</button>
+      <canvas id="proConfettiCanvas" class="pro-confetti-canvas"></canvas>
+      
+      <div class="pro-badge-wrap">
+        <span class="pro-badge" id="proModalBadge">
+          <span class="pro-badge-dot"></span>
+          <span id="proModalBadgeText">🏆 ¡VICTORIA CONFIRMADA!</span>
+        </span>
+      </div>
+
+      <div class="pro-modal-icon-wrap" id="proModalIconWrap">
+        <div class="pro-modal-icon" id="proModalIcon">🎉</div>
+      </div>
+
+      <h3 class="pro-modal-title" id="proModalTitle">¡GANANCIA APLICADA AL BANKROLL!</h3>
+      <p class="pro-modal-subtitle" id="proModalSubtitle">Boleto #WVQY3EYW procesado y auditado con éxito</p>
+
+      <div class="pro-metric-grid" id="proModalGrid"></div>
+
+      <div class="pro-modal-notes" id="proModalNotes"></div>
+
+      <div class="pro-modal-actions" id="proModalActions">
+        <button type="button" class="pro-btn-primary" id="proModalBtnPrimary" onclick="ejecutarAccionModalConfirm()">
+          <span>¡Excelente, Continuar!</span> 🚀
+        </button>
+      </div>
     </div>
   </div>
+
+  <div id="proToastContainer" class="pro-toast-container"></div>
 
   <script>
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.expand();
     }
+
+    /* --- MOTOR DE MODAL PRO, CELEBRACIÓN Y TOASTS --- */
+    let confettiAnimId = null;
+    let modalCallbackConfirm = null;
+    let modalCallbackCancel = null;
+
+    function cerrarProModal() {
+      const overlay = document.getElementById('proModalOverlay');
+      if (overlay) overlay.classList.remove('active');
+      if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+      if (typeof modalCallbackCancel === 'function') {
+        const cb = modalCallbackCancel;
+        modalCallbackCancel = null;
+        cb();
+      }
+    }
+
+    function onOverlayClick(e) {
+      if (e.target.id === 'proModalOverlay') {
+        cerrarProModal();
+      }
+    }
+
+    function ejecutarAccionModalConfirm() {
+      const cb = modalCallbackConfirm;
+      modalCallbackConfirm = null;
+      modalCallbackCancel = null;
+      cerrarProModal();
+      if (typeof cb === 'function') cb();
+    }
+
+    function iniciarConfetti(canvas) {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const colors = ['#10b981', '#34d399', '#fbbf24', '#f59e0b', '#38bdf8', '#a855f7', '#ffffff'];
+      const particles = [];
+      const total = 55;
+
+      for (let i = 0; i < total; i++) {
+        particles.push({
+          x: rect.width / 2 + (Math.random() - 0.5) * 60,
+          y: rect.height * 0.35 + (Math.random() - 0.5) * 40,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 1.2) * 11,
+          size: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10,
+          alpha: 1,
+          shape: Math.random() > 0.4 ? 'rect' : 'circle'
+        });
+      }
+
+      const startTime = Date.now();
+      if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+
+      function frame() {
+        const elapsed = Date.now() - startTime;
+        ctx.clearRect(0, 0, rect.width, rect.height);
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.28;
+          p.vx *= 0.98;
+          p.rotation += p.vRot;
+          if (elapsed > 1800) {
+            p.alpha = Math.max(0, p.alpha - 0.025);
+          }
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+
+          if (p.shape === 'rect') {
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        });
+
+        if (elapsed < 2800) {
+          confettiAnimId = requestAnimationFrame(frame);
+        } else {
+          ctx.clearRect(0, 0, rect.width, rect.height);
+        }
+      }
+
+      confettiAnimId = requestAnimationFrame(frame);
+    }
+
+    function mostrarCelebracionModal(config) {
+      const overlay = document.getElementById('proModalOverlay');
+      const card = document.getElementById('proModalCard');
+      const badgeWrap = document.querySelector('.pro-badge-wrap');
+      const badge = document.getElementById('proModalBadge');
+      const badgeText = document.getElementById('proModalBadgeText');
+      const icon = document.getElementById('proModalIcon');
+      const title = document.getElementById('proModalTitle');
+      const subtitle = document.getElementById('proModalSubtitle');
+      const grid = document.getElementById('proModalGrid');
+      const notes = document.getElementById('proModalNotes');
+      const actions = document.getElementById('proModalActions');
+      const canvas = document.getElementById('proConfettiCanvas');
+
+      card.className = 'pro-modal-card' + (config.tipo ? ` tipo-${config.tipo}` : '');
+
+      if (config.badge) {
+        badgeWrap.style.display = 'flex';
+        badgeText.innerText = config.badge;
+        if (config.tipo === 'cashout') {
+          badge.style.background = 'rgba(245, 158, 11, 0.15)';
+          badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+          badge.style.color = '#fbbf24';
+        } else if (config.tipo === 'perdida') {
+          badge.style.background = 'rgba(239, 68, 68, 0.15)';
+          badge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+          badge.style.color = '#f87171';
+        } else if (config.tipo === 'info') {
+          badge.style.background = 'rgba(56, 189, 248, 0.15)';
+          badge.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+          badge.style.color = '#38bdf8';
+        } else {
+          badge.style.background = 'rgba(16, 185, 129, 0.15)';
+          badge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+          badge.style.color = '#34d399';
+        }
+      } else {
+        badgeWrap.style.display = 'none';
+      }
+
+      icon.innerText = config.icon || '🎉';
+      title.innerHTML = config.titulo || '¡OPERACIÓN EXITOSA!';
+      subtitle.innerHTML = config.subtitulo || '';
+
+      if (config.metrics && config.metrics.length > 0) {
+        grid.style.display = 'grid';
+        grid.innerHTML = config.metrics.map(m => {
+          const fullClass = m.fullWidth ? ' full-width' : '';
+          const highClass = m.highlight ? ` highlight-${m.highlight}` : '';
+          return `
+            <div class="pro-metric-card${fullClass}${highClass}">
+              <div class="pro-metric-label">
+                <span>${m.label}</span>
+                ${m.tag ? `<span class="tag" style="background: rgba(255,255,255,0.1); font-size: 0.65rem;">${m.tag}</span>` : ''}
+              </div>
+              <div class="pro-metric-val" style="color: ${m.color || '#fff'}">${m.valor}</div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        grid.style.display = 'none';
+        grid.innerHTML = '';
+      }
+
+      if (config.notes && config.notes.length > 0) {
+        notes.style.display = 'block';
+        notes.innerHTML = config.notes.map(n => `<div>${n}</div>`).join('');
+      } else {
+        notes.style.display = 'none';
+        notes.innerHTML = '';
+      }
+
+      modalCallbackConfirm = config.onConfirm || null;
+      modalCallbackCancel = config.onCancel || null;
+
+      actions.innerHTML = `
+        <button type="button" class="pro-btn-primary" onclick="ejecutarAccionModalConfirm()">
+          <span>${config.botonTexto || '¡Excelente, Continuar!'}</span> 🚀
+        </button>
+      `;
+
+      overlay.classList.add('active');
+
+      if (config.tipo === 'ganada' || (!config.tipo && config.confetti !== false)) {
+        setTimeout(() => iniciarConfetti(canvas), 80);
+      }
+    }
+
+    function mostrarConfirmacionPro(config) {
+      const overlay = document.getElementById('proModalOverlay');
+      const card = document.getElementById('proModalCard');
+      const badgeWrap = document.querySelector('.pro-badge-wrap');
+      const badge = document.getElementById('proModalBadge');
+      const badgeText = document.getElementById('proModalBadgeText');
+      const icon = document.getElementById('proModalIcon');
+      const title = document.getElementById('proModalTitle');
+      const subtitle = document.getElementById('proModalSubtitle');
+      const grid = document.getElementById('proModalGrid');
+      const notes = document.getElementById('proModalNotes');
+      const actions = document.getElementById('proModalActions');
+
+      card.className = 'pro-modal-card tipo-cashout';
+      badgeWrap.style.display = 'flex';
+      badgeText.innerText = config.badge || 'CONFIRMACIÓN REQUERIDA';
+      badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+      badge.style.color = '#fbbf24';
+
+      icon.innerText = config.icon || '⚠️';
+      title.innerHTML = config.titulo || '¿Confirmar Acción?';
+      subtitle.innerHTML = config.subtitulo || '';
+      grid.style.display = 'none';
+      grid.innerHTML = '';
+
+      if (config.mensaje) {
+        notes.style.display = 'block';
+        notes.innerHTML = `<div>${config.mensaje}</div>`;
+      } else {
+        notes.style.display = 'none';
+      }
+
+      modalCallbackConfirm = config.onConfirm || null;
+      modalCallbackCancel = config.onCancel || null;
+
+      actions.innerHTML = `
+        <button type="button" class="pro-btn-secondary" onclick="cerrarProModal()">
+          ${config.botonCancelar || 'Cancelar'}
+        </button>
+        <button type="button" class="pro-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);" onclick="ejecutarAccionModalConfirm()">
+          <span>${config.botonConfirmar || 'Sí, Confirmar'}</span>
+        </button>
+      `;
+
+      overlay.classList.add('active');
+    }
+
+    function mostrarModalProSimple(config) {
+      mostrarCelebracionModal({
+        tipo: config.tipo || 'info',
+        badge: config.badge || 'NOTIFICACIÓN VIP',
+        icon: config.icon || (config.tipo === 'perdida' ? '📉' : (config.tipo === 'error' ? '⚠️' : 'ℹ️')),
+        titulo: config.titulo || 'Notificación del Sistema',
+        subtitulo: config.subtitulo || '',
+        notes: config.mensaje ? [config.mensaje] : (config.notes || []),
+        botonTexto: config.botonTexto || 'Entendido',
+        confetti: false,
+        onConfirm: config.onConfirm
+      });
+    }
+
+    function mostrarToast(mensaje, tipo = 'info', duracion = 3500) {
+      const container = document.getElementById('proToastContainer');
+      if (!container) return;
+
+      const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+      };
+
+      const toast = document.createElement('div');
+      toast.className = `pro-toast toast-${tipo}`;
+      toast.innerHTML = `
+        <span class="pro-toast-icon">${icons[tipo] || 'ℹ️'}</span>
+        <span class="pro-toast-msg">${mensaje}</span>
+      `;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.add('show');
+      });
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 350);
+      }, duracion);
+    }
+
+    // Interceptor global para que ningún alert nativo se muestre en pantalla
+    window.alert = function(msg) {
+      mostrarModalProSimple({
+        titulo: 'Notificación del Sistema',
+        mensaje: String(msg).replace(/\n/g, '<br>'),
+        tipo: 'info'
+      });
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') cerrarProModal();
+    });
 
     let bankrollTotal = parseFloat(localStorage.getItem('bankroll_total')) || 100000;
     let deudaRecuperacion = parseFloat(localStorage.getItem('deuda_recuperacion')) || 0;
@@ -993,11 +1638,11 @@
 
     async function procesarImagenFile(file) {
       if (!file || !file.type.startsWith('image/')) {
-        return alert('Por favor selecciona una imagen válida de tu boleto.');
+        return mostrarToast('Por favor selecciona una imagen válida de tu boleto.', 'warning');
       }
 
       if (typeof Tesseract === 'undefined') {
-        return alert('Cargando el motor OCR en el navegador... Por favor espera 3 segundos e intenta de nuevo.');
+        return mostrarToast('Cargando el motor OCR en el navegador... Por favor espera 3 segundos e intenta de nuevo.', 'info');
       }
 
       const ocrBox = document.getElementById('ocrLoadingFeedback');
@@ -1035,7 +1680,7 @@
       } catch (err) {
         console.error('Error en OCR:', err);
         if (ocrBox) ocrBox.style.display = 'none';
-        alert('No se pudo leer la imagen automáticamente. Intenta con una imagen más nítida o escribe la cuota manualmente.');
+        mostrarToast('No se pudo leer la imagen automáticamente. Intenta con una imagen más nítida o escribe la cuota manualmente.', 'warning', 5000);
       }
     }
 
@@ -1358,7 +2003,25 @@
       renderDashboard();
       analizarLinkBetano();
 
-      alert(`🎉 ¡GANANCIA APLICADA AL BANKROLL CON ÉXITO!\n\nBoleto #${code} Ganado:\n• Invertido en Betano: ${formatCOP(apostado)}\n• Cobrado de Betano: ${formatCOP(cobro)}\n• Beneficio Limpio Sumado: +${formatCOP(neto)}\n\nTu nuevo Bankroll Real en caja es: ${formatCOP(bankrollTotal)}.\nSe actualizó tu Win Rate (100%) y se registró en tu Historial de Jugadas.`);
+      mostrarCelebracionModal({
+        tipo: 'ganada',
+        badge: '🏆 ¡VICTORIA CONFIRMADA!',
+        icon: '🎉',
+        titulo: '¡GANANCIA APLICADA AL BANKROLL!',
+        subtitulo: `Boleto Oficial de Betano #${code} Procesado &middot; Besiktas vs Crystal Palace (+1.5 Goles)`,
+        metrics: [
+          { label: 'Invertido en Betano', valor: formatCOP(apostado), color: '#94a3b8' },
+          { label: 'Cobrado de Betano', valor: formatCOP(cobro), color: '#38bdf8' },
+          { label: 'Beneficio Limpio Sumado', valor: `+${formatCOP(neto)}`, color: '#10b981', highlight: 'green' },
+          { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+        ],
+        notes: [
+          '⚡ <strong>Win Rate:</strong> Tu efectividad se actualizó al <strong>100%</strong>.',
+          '📋 <strong>Historial:</strong> Movimiento financiero guardado y auditado.',
+          '🏦 <strong>Caja Real:</strong> Saldo disponible listo para tu siguiente jugada inteligente.'
+        ],
+        botonTexto: '¡Excelente, Continuar! 🚀'
+      });
     }
 
     function actualizarEstrategiaBetano(cuota, customCashout) {
@@ -1658,10 +2321,28 @@
       apuestasActivas.unshift(nuevaApuesta);
       guardarEstado();
 
-      alert(`🎯 ¡Apuesta Registrada en Juego!\n\nBoleto #${code} guardado por ${formatCOP(montoApostar)} (@ ${cuota.toFixed(2)}).\nPuedes seguirla y marcar si Ganó, Perdió, Anuló o si hiciste Cash Out en la sección "Tus Boletos y Apuestas en Juego".`);
-
-      const elActivas = document.getElementById('contenedorApuestasActivas');
-      if (elActivas) elActivas.scrollIntoView({ behavior: 'smooth' });
+      mostrarCelebracionModal({
+        tipo: 'info',
+        badge: '🎯 BOLETO EN JUEGO',
+        icon: '⚽',
+        titulo: '¡Apuesta Registrada con Éxito!',
+        subtitulo: `Boleto #${code} guardado para seguimiento en vivo`,
+        metrics: [
+          { label: 'Invertido en Betano', valor: formatCOP(montoApostar), color: '#38bdf8' },
+          { label: 'Cuota Total', valor: `@ ${cuota.toFixed(2)}`, color: '#fbbf24' },
+          { label: 'Retorno Potencial', valor: formatCOP(retornoPotencial), color: '#34d399', highlight: 'green' },
+          { label: 'Beneficio Limpio Esperado', valor: `+${formatCOP(beneficioLimpio)}`, color: '#10b981', highlight: 'green' }
+        ],
+        notes: [
+          '📍 <strong>Monitoreo:</strong> Puedes seguir el partido y marcar si <strong>Ganó, Perdió, Anuló o si hiciste Cash Out</strong> en la sección "Tus Boletos y Apuestas en Juego".'
+        ],
+        botonTexto: 'Ver Apuestas en Juego 🎯',
+        confetti: false,
+        onConfirm: () => {
+          const elActivas = document.getElementById('contenedorApuestasActivas');
+          if (elActivas) elActivas.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
     }
 
     function renderApuestasActivas() {
@@ -1767,10 +2448,19 @@
       const ap = apuestasActivas[index];
 
       if (accion === 'eliminar') {
-        if (confirm(`¿Deseas descartar este boleto (#${ap.code}) de tus apuestas en juego sin alterar tu saldo?`)) {
-          apuestasActivas.splice(index, 1);
-          guardarEstado();
-        }
+        mostrarConfirmacionPro({
+          badge: 'DESCARTAR BOLETO',
+          icon: '🗑️',
+          titulo: '¿Descartar este boleto?',
+          mensaje: `Se descartará el boleto <strong>#${ap.code}</strong> (${ap.titulo}) de tus apuestas en juego sin alterar tu saldo en caja.`,
+          botonConfirmar: 'Sí, Descartar',
+          botonCancelar: 'Volver',
+          onConfirm: () => {
+            apuestasActivas.splice(index, 1);
+            guardarEstado();
+            mostrarToast(`Boleto #${ap.code} descartado`, 'info');
+          }
+        });
         return;
       }
 
@@ -1787,8 +2477,20 @@
           neto: 0
         });
         apuestasActivas.splice(index, 1);
-        alert(`⚪ Boleto #${ap.code} marcado como ANULADO.\nTu dinero volvió a la caja con $0 impacto.`);
         guardarEstado();
+
+        mostrarModalProSimple({
+          badge: '⚪ REEMBOLSO (PUSH)',
+          icon: '🛡️',
+          tipo: 'info',
+          titulo: 'Boleto Anulado / Reembolsado',
+          subtitulo: `Boleto #${ap.code} de Betano devuelto al 100%`,
+          notes: [
+            `• Tu dinero de <strong>${formatCOP(ap.montoApostar)}</strong> regresó a la caja con $0 impacto.`,
+            '• Tu bankroll no sufrió ningún descuento.'
+          ],
+          botonTexto: 'Aceptar'
+        });
         return;
       }
 
@@ -1796,7 +2498,7 @@
         const promptCash = prompt(`💵 Cierre Anticipado / Cash Out (#${ap.code}):\n\n¿Cuánto dinero te pagó Betano al cerrar este boleto? (Ingresa en COP, ej: 32000):`, Math.round(ap.montoApostar * 1.5));
         if (promptCash === null) return;
         const cobroReal = parseFloat(promptCash) || 0;
-        if (cobroReal <= 0) return alert('Monto inválido.');
+        if (cobroReal <= 0) return mostrarToast('Monto inválido de Cash Out.', 'warning');
 
         const neto = cobroReal - ap.montoApostar;
         bankrollTotal += neto;
@@ -1820,8 +2522,25 @@
         });
 
         apuestasActivas.splice(index, 1);
-        alert(`💵 ¡Cash Out Registrado!\nCobraste ${formatCOP(cobroReal)} (Beneficio neto: ${formatCOP(neto)}).\nTu nuevo Bankroll es ${formatCOP(bankrollTotal)}.`);
         guardarEstado();
+
+        mostrarCelebracionModal({
+          tipo: 'cashout',
+          badge: '💵 CASHOUT CONFIRMADO',
+          icon: '💰',
+          titulo: '¡Cash Out Registrado con Éxito!',
+          subtitulo: `Cierre anticipado del Boleto #${ap.code}`,
+          metrics: [
+            { label: 'Invertido', valor: formatCOP(ap.montoApostar), color: '#94a3b8' },
+            { label: 'Cobrado Cashout', valor: formatCOP(cobroReal), color: '#38bdf8' },
+            { label: 'Beneficio Neto', valor: (neto >= 0 ? `+${formatCOP(neto)}` : formatCOP(neto)), color: neto >= 0 ? '#10b981' : '#f87171', highlight: neto >= 0 ? 'green' : '' },
+            { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+          ],
+          notes: [
+            '✅ Cierre exitoso registrado y sumado a tu balance financiero.'
+          ],
+          botonTexto: 'Continuar 🚀'
+        });
         return;
       }
 
@@ -1855,8 +2574,26 @@
         });
 
         apuestasActivas.splice(index, 1);
-        alert(`🎉 ¡GANADA! Boleto #${ap.code} acertado.\nCobraste ${formatCOP(retorno)} (Ganancia neta: ${formatCOP(neto)}).\nTu Bankroll sube a ${formatCOP(bankrollTotal)}.`);
         guardarEstado();
+
+        mostrarCelebracionModal({
+          tipo: 'ganada',
+          badge: '🏆 ¡APUESTA GANADA!',
+          icon: '🎉',
+          titulo: '¡Boleto Acertado con Éxito!',
+          subtitulo: `Boleto #${ap.code} (${ap.titulo})`,
+          metrics: [
+            { label: 'Invertido', valor: formatCOP(ap.caso === 'freebet' ? 0 : ap.montoApostar), color: '#94a3b8' },
+            { label: 'Cobrado Total', valor: formatCOP(retorno), color: '#38bdf8' },
+            { label: 'Ganancia Limpia', valor: `+${formatCOP(neto)}`, color: '#10b981', highlight: 'green' },
+            { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+          ],
+          notes: [
+            '⚡ <strong>Win Rate:</strong> Estadísticas de rendimiento actualizadas.',
+            '📋 Ganancia limpia sumada a tu saldo en caja.'
+          ],
+          botonTexto: '¡Excelente, Continuar! 🚀'
+        });
         return;
       }
 
@@ -1873,7 +2610,21 @@
             retorno: 0,
             neto: 0
           });
-          alert(`ℹ️ Freebet no acertada. Como fue bono $0, no perdiste dinero de tu caja.`);
+
+          apuestasActivas.splice(index, 1);
+          guardarEstado();
+
+          mostrarModalProSimple({
+            badge: 'BONO SIN RIESGO',
+            icon: '🛡️',
+            tipo: 'info',
+            titulo: 'Freebet no acertada',
+            subtitulo: `Boleto #${ap.code} con Freebet de Betano`,
+            notes: [
+              '• Como fue un bono de <strong>$0 costo de tu bolsillo</strong>, tu Bankroll no perdió ni un solo peso de tu caja.'
+            ],
+            botonTexto: 'Entendido'
+          });
         } else {
           bankrollTotal -= ap.montoApostar;
           deudaRecuperacion += ap.montoApostar;
@@ -1890,11 +2641,23 @@
             neto: -ap.montoApostar
           });
 
-          alert(`⚠️ Apuesta perdida (-${formatCOP(ap.montoApostar)}).\nTu nuevo saldo en caja es ${formatCOP(bankrollTotal)}.\nEl déficit total a recuperar en tu próxima jugada es ${formatCOP(deudaRecuperacion)}.`);
-        }
+          apuestasActivas.splice(index, 1);
+          guardarEstado();
 
-        apuestasActivas.splice(index, 1);
-        guardarEstado();
+          mostrarModalProSimple({
+            badge: '⚠️ CONTROL DE RIESGO',
+            icon: '📉',
+            tipo: 'perdida',
+            titulo: 'Apuesta no acertada',
+            subtitulo: `Boleto #${ap.code} (${ap.titulo})`,
+            notes: [
+              `• <strong>Inversión perdida:</strong> -${formatCOP(ap.montoApostar)}.`,
+              `• <strong>Nuevo Saldo en Caja:</strong> ${formatCOP(bankrollTotal)}.`,
+              `• <strong>Déficit para recuperar en próxima jugada:</strong> ${formatCOP(deudaRecuperacion)}.`
+            ],
+            botonTexto: 'Entendido, Diseñar Rescate'
+          });
+        }
       }
     }
 
@@ -1927,7 +2690,17 @@
           neto: 0
         });
 
-        alert(`⚪ Apuesta Anulada / Reembolsada.\nTu dinero volvió intacto a la caja con $0 impacto.`);
+        mostrarModalProSimple({
+          badge: '⚪ REEMBOLSO (PUSH)',
+          icon: '🛡️',
+          tipo: 'info',
+          titulo: 'Apuesta Anulada / Reembolsada',
+          subtitulo: `${concepto} devuelta al 100%`,
+          notes: [
+            `• Tu importe de <strong>${formatCOP(montoApostadoBolsillo)}</strong> volvió a la caja sin alteraciones.`,
+            '• Saldo protegido con $0 impacto financiero.'
+          ]
+        });
         guardarEstado();
         return;
       }
@@ -1951,7 +2724,22 @@
             neto: neto
           });
 
-          alert(`🎉 ¡FREEBET GANADA! Ganaste ${formatCOP(neto)} netos con $0 de inversión de tu bolsillo.\nTu Bankroll sube a ${formatCOP(bankrollTotal)}.`);
+          mostrarCelebracionModal({
+            tipo: 'ganada',
+            badge: '🎁 ¡FREEBET GANADA!',
+            icon: '🎉',
+            titulo: '¡Bono Acertado con Éxito!',
+            subtitulo: `${concepto} &middot; Inversión $0 COP`,
+            metrics: [
+              { label: 'Costo Bolsillo', valor: '$ 0 COP', color: '#94a3b8' },
+              { label: 'Beneficio Limpio Ganado', valor: `+${formatCOP(neto)}`, color: '#10b981', highlight: 'green' },
+              { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+            ],
+            notes: [
+              '⚡ <strong>Ganancia pura:</strong> Fondos reales sumados sin haber arriesgado un solo peso de tu bolsillo.'
+            ],
+            botonTexto: '¡Excelente, Continuar! 🚀'
+          });
         } else {
           // Freebet perdida: NO RESTA DE TU CAJA
           movimientos.unshift({
@@ -1966,7 +2754,16 @@
             neto: 0
           });
 
-          alert(`ℹ️ Freebet no acertada. Como fue un bono de $0 costo de bolsillo, tu Bankroll no perdió ni un solo peso.`);
+          mostrarModalProSimple({
+            badge: 'BONO SIN RIESGO',
+            icon: '🛡️',
+            tipo: 'info',
+            titulo: 'Freebet no acertada',
+            subtitulo: `${concepto} (Bono de Betano)`,
+            notes: [
+              '• Como fue un bono de <strong>$0 costo de tu bolsillo</strong>, tu Bankroll no perdió ni un solo peso.'
+            ]
+          });
         }
         guardarEstado();
         return;
@@ -2005,7 +2802,23 @@
           neto: neto
         });
 
-        alert(`🎉 ¡GANADA! Cobraste ${formatCOP(retorno)} (Beneficio neto: ${formatCOP(neto)}).\nTu Bankroll aumentó a ${formatCOP(bankrollTotal)}.`);
+        mostrarCelebracionModal({
+          tipo: 'ganada',
+          badge: '🏆 ¡JUGADA GANADA!',
+          icon: '🎉',
+          titulo: '¡Victoria Confirmada!',
+          subtitulo: `${concepto} (@ ${cuota.toFixed(2)})`,
+          metrics: [
+            { label: 'Invertido', valor: formatCOP(montoApostadoBolsillo), color: '#94a3b8' },
+            { label: 'Cobrado Total', valor: formatCOP(retorno), color: '#38bdf8' },
+            { label: 'Beneficio Limpio', valor: `+${formatCOP(neto)}`, color: '#10b981', highlight: 'green' },
+            { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+          ],
+          notes: [
+            casoActual === 'rescate' ? '🎯 <strong>Rescate matemático completado:</strong> El déficit a recuperar se redujo a $0 COP.' : '⚡ Estadísticas y balance actualizados en tiempo real.'
+          ],
+          botonTexto: '¡Excelente, Continuar! 🚀'
+        });
       } else {
         // PERDIDA CON DINERO REAL
         bankrollTotal -= montoApostadoBolsillo;
@@ -2023,7 +2836,19 @@
           neto: -montoApostadoBolsillo
         });
 
-        alert(`⚠️ Apuesta perdida (${formatCOP(-montoApostadoBolsillo)}).\nTu nuevo saldo en caja es de ${formatCOP(bankrollTotal)}.\nEl déficit total a recuperar es de ${formatCOP(deudaRecuperacion)}.`);
+        mostrarModalProSimple({
+          badge: '⚠️ CONTROL DE RIESGO',
+          icon: '📉',
+          tipo: 'perdida',
+          titulo: 'Apuesta no acertada',
+          subtitulo: `${concepto} (@ ${cuota.toFixed(2)})`,
+          notes: [
+            `• <strong>Importe perdido:</strong> -${formatCOP(montoApostadoBolsillo)}.`,
+            `• <strong>Nuevo Saldo en Caja:</strong> ${formatCOP(bankrollTotal)}.`,
+            `• <strong>Déficit total por recuperar:</strong> ${formatCOP(deudaRecuperacion)}.`
+          ],
+          botonTexto: 'Entendido, Diseñar Rescate'
+        });
       }
 
       document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion);
@@ -2274,7 +3099,7 @@
 
     function cobrarCashoutModal() {
       const oferta = parseFloat(document.getElementById('inputCashoutOferta').value) || 0;
-      if (!oferta || oferta <= 0) return alert('Ingresa un monto válido de Cash Out');
+      if (!oferta || oferta <= 0) return mostrarToast('Ingresa un monto válido de Cash Out', 'warning');
 
       const cuota = parseFloat(document.getElementById('dynCuota').value) || 1.80;
       let invertido = 0;
@@ -2287,23 +3112,47 @@
 
       const neto = oferta - invertido;
 
-      if (confirm(`¿Confirmas que cobraste el Cash Out en Betano por ${formatCOP(oferta)}? (Beneficio neto: ${formatCOP(neto)})`)) {
-        bankrollTotal += neto;
-        movimientos.unshift({
-          id: Date.now(),
-          fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
-          tipo: 'Cash Out Cobrado (Betano)',
-          categoria: neto >= 0 ? 'ganada' : 'perdida',
-          concepto: `Salida Anticipada Betano (@ ${cuota.toFixed(2)})`,
-          cuota: cuota,
-          invertido: invertido,
-          retorno: oferta,
-          neto: neto
-        });
+      mostrarConfirmacionPro({
+        badge: 'CONFIRMAR CASH OUT',
+        icon: '💵',
+        titulo: '¿Cobrar Cash Out de Betano?',
+        mensaje: `¿Confirmas que cobraste el Cash Out por <strong>${formatCOP(oferta)}</strong>?<br>Beneficio neto resultante: <strong style="color: ${neto >= 0 ? '#10b981' : '#f87171'}">${neto >= 0 ? '+' : ''}${formatCOP(neto)}</strong>.`,
+        botonConfirmar: 'Sí, Cobrar Cash Out',
+        botonCancelar: 'Cancelar',
+        onConfirm: () => {
+          bankrollTotal += neto;
+          movimientos.unshift({
+            id: Date.now(),
+            fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+            tipo: 'Cash Out Cobrado (Betano)',
+            categoria: neto >= 0 ? 'ganada' : 'perdida',
+            concepto: `Salida Anticipada Betano (@ ${cuota.toFixed(2)})`,
+            cuota: cuota,
+            invertido: invertido,
+            retorno: oferta,
+            neto: neto
+          });
 
-        alert(`✅ ¡Cash Out Registrado! Se sumaron ${formatCOP(oferta)} a tu balance.\nNuevo Bankroll: ${formatCOP(bankrollTotal)}.`);
-        guardarEstado();
-      }
+          guardarEstado();
+
+          mostrarCelebracionModal({
+            tipo: 'cashout',
+            badge: '💵 CASHOUT COMPLETADO',
+            icon: '💰',
+            titulo: '¡Cash Out Sumado a la Caja!',
+            subtitulo: `Se sumaron ${formatCOP(oferta)} a tu balance`,
+            metrics: [
+              { label: 'Cobrado Cashout', valor: formatCOP(oferta), color: '#38bdf8' },
+              { label: 'Beneficio Limpio', valor: (neto >= 0 ? `+${formatCOP(neto)}` : formatCOP(neto)), color: neto >= 0 ? '#10b981' : '#f87171', highlight: neto >= 0 ? 'green' : '' },
+              { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+            ],
+            notes: [
+              '✅ Fondos disponibles de inmediato en tu bankroll.'
+            ],
+            botonTexto: 'Continuar 🚀'
+          });
+        }
+      });
     }
 
     // --- CALCULADORA DE COBERTURA / HEDGING (ASEGURAR GANANCIA EN ÚLTIMO PARTIDO) ---
@@ -2595,7 +3444,7 @@
       if (val && !isNaN(val) && val > 0) {
         bankrollTotal = val;
         guardarEstado();
-        alert(`✅ Bankroll actualizado a ${formatCOP(bankrollTotal)}`);
+        mostrarToast(`Bankroll actualizado a ${formatCOP(bankrollTotal)}`, 'success');
         switchTab('apuesta');
       }
     }
@@ -2603,7 +3452,7 @@
     function sumarPerdidaManual() {
       const val = parseFloat(document.getElementById('inputPerdidaManual').value);
       const concepto = document.getElementById('inputConceptoManual').value.trim() || 'Pérdida Agregada';
-      if (!val || isNaN(val) || val <= 0) return alert('Ingresa un monto válido');
+      if (!val || isNaN(val) || val <= 0) return mostrarToast('Ingresa un monto válido', 'warning');
 
       deudaRecuperacion += val;
       bankrollTotal -= val;
@@ -2625,7 +3474,7 @@
       document.getElementById('inputConceptoManual').value = '';
 
       guardarEstado();
-      alert(`⚠️ Se sumaron ${formatCOP(val)} al déficit. Total por recuperar: ${formatCOP(deudaRecuperacion)}.`);
+      mostrarToast(`Se sumaron ${formatCOP(val)} al déficit. Total: ${formatCOP(deudaRecuperacion)}`, 'warning');
       switchTab('apuesta');
     }
 
@@ -2633,24 +3482,42 @@
       deudaRecuperacion = 0;
       document.getElementById('dynPerdida').value = 0;
       guardarEstado();
-      alert('✅ Déficit de recuperación reiniciado a $0 COP.');
+      mostrarToast('Déficit de recuperación reiniciado a $0 COP.', 'info');
       switchTab('apuesta');
     }
 
     function eliminarMovimiento(id) {
-      if (confirm('¿Eliminar este movimiento?')) {
-        movimientos = movimientos.filter(m => m.id !== id);
-        guardarEstado();
-      }
+      mostrarConfirmacionPro({
+        badge: 'ELIMINAR MOVIMIENTO',
+        icon: '🗑️',
+        titulo: '¿Eliminar este registro?',
+        mensaje: '¿Deseas eliminar este movimiento de tu historial?',
+        botonConfirmar: 'Sí, Eliminar',
+        botonCancelar: 'Cancelar',
+        onConfirm: () => {
+          movimientos = movimientos.filter(m => m.id !== id);
+          guardarEstado();
+          mostrarToast('Movimiento eliminado', 'info');
+        }
+      });
     }
 
     function limpiarTodoHistorial() {
-      if (confirm('¿Reiniciar todo el historial de movimientos y dejar la deuda en $0?')) {
-        movimientos = [];
-        deudaRecuperacion = 0;
-        document.getElementById('dynPerdida').value = 0;
-        guardarEstado();
-      }
+      mostrarConfirmacionPro({
+        badge: 'REINICIAR TODO',
+        icon: '⚠️',
+        titulo: '¿Reiniciar Historial Completo?',
+        mensaje: 'Se borrarán todos los movimientos registrados y el déficit se reiniciará a $0 COP. Esta acción no se puede deshacer.',
+        botonConfirmar: 'Sí, Reiniciar Todo',
+        botonCancelar: 'Cancelar',
+        onConfirm: () => {
+          movimientos = [];
+          deudaRecuperacion = 0;
+          document.getElementById('dynPerdida').value = 0;
+          guardarEstado();
+          mostrarToast('Historial reiniciado por completo', 'info');
+        }
+      });
     }
 
     function exportarBackupJSON() {

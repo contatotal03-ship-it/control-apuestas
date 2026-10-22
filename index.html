@@ -12,6 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- OCR Tesseract.js para Escanear Capturas de Betano -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
       --bg: #060911;
@@ -431,16 +433,34 @@
         </div>
 
         <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.85rem; line-height: 1.45;">
-          Pega aquí el enlace de tu jugada compartida de Betano (ej: <code class="code-pill">https://www.betano.co/bookingcode/87HRQDSU/</code>) o el código <code class="code-pill">87HRQDSU</code>. El sistema extrae la cuota, te desglosa el boleto y te da la estrategia según si tiene costo o costo $0.
+          Pega el enlace de Betano o <strong>sube la captura de pantalla de tu boleto</strong> (incluso si ya finalizó, ganó o perdió). El lector con IA extrae la cuota, lo apostado y el cobro automáticamente.
         </div>
 
-        <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
-          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/ATY8SP4H/" value="https://www.betano.co/bookingcode/ATY8SP4H/" oninput="analizarLinkBetano()">
-          <button class="btn btn-betano" style="width: auto; min-width: 180px; padding: 0.85rem 1.4rem;" onclick="analizarLinkBetano()">
-            <span>⚡</span> Cargar y Analizar Jugada
+        <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: stretch;">
+          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/WVQY3EYW/ o pulsa 'Subir Imagen'" value="https://www.betano.co/bookingcode/WVQY3EYW/" oninput="analizarLinkBetano()">
+          <button class="btn btn-betano" style="width: auto; min-width: 160px; padding: 0.85rem 1.2rem;" onclick="analizarLinkBetano()">
+            <span>⚡</span> Cargar Enlace
           </button>
+          <label style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.85rem 1.25rem; background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 0.75rem; font-size: 0.85rem; white-space: nowrap; transition: all 0.2s; box-shadow: 0 4px 12px rgba(56,189,248,0.25);">
+            <span>📷</span> Subir / Pegar Imagen
+            <input type="file" id="inputFotoBetano" accept="image/*" style="display: none;" onchange="procesarArchivoImagen(this)">
+          </label>
         </div>
         <div id="betanoStatusFeedback" style="font-size: 0.78rem; margin-top: 0.45rem; line-height: 1.4;"></div>
+
+        <!-- Indicador de Progreso del Escaneo OCR -->
+        <div id="ocrLoadingFeedback" style="display: none; margin-top: 0.6rem; background: rgba(15, 23, 42, 0.95); border: 1.5px solid #38bdf8; border-radius: 0.75rem; padding: 0.8rem 1rem; box-shadow: 0 4px 16px rgba(56,189,248,0.3);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; color: #38bdf8; font-weight: 800; font-size: 0.86rem;">
+              <span id="ocrSpinner">🔍</span>
+              <span id="ocrStatusText">Leyendo texto y números de la captura de Betano...</span>
+            </div>
+            <span id="ocrPercentText" style="font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #38bdf8; font-weight: 800;">0%</span>
+          </div>
+          <div style="width: 100%; background: rgba(0,0,0,0.5); height: 7px; border-radius: 4px; margin-top: 0.45rem; overflow: hidden;">
+            <div id="ocrProgressBar" style="width: 5%; height: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8); transition: width 0.2s;"></div>
+          </div>
+        </div>
 
         <!-- Accesos directos a boletos guardados categorizados -->
         <div style="margin-top: 0.75rem; display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center;">
@@ -964,6 +984,231 @@
       document.getElementById('betanoLinkInput').value = `https://www.betano.co/bookingcode/${code}/`;
       analizarLinkBetano();
     }
+
+    // --- LECTOR DE IMÁGENES Y CAPTURAS DE BETANO CON IA OCR (Tesseract.js) ---
+    function procesarArchivoImagen(input) {
+      if (!input || !input.files || !input.files[0]) return;
+      procesarImagenFile(input.files[0]);
+    }
+
+    async function procesarImagenFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        return alert('Por favor selecciona una imagen válida de tu boleto.');
+      }
+
+      if (typeof Tesseract === 'undefined') {
+        return alert('Cargando el motor OCR en el navegador... Por favor espera 3 segundos e intenta de nuevo.');
+      }
+
+      const ocrBox = document.getElementById('ocrLoadingFeedback');
+      const ocrStatus = document.getElementById('ocrStatusText');
+      const ocrPercent = document.getElementById('ocrPercentText');
+      const ocrProgress = document.getElementById('ocrProgressBar');
+
+      if (ocrBox) ocrBox.style.display = 'block';
+      if (ocrStatus) ocrStatus.innerText = 'Inicializando IA para leer captura de Betano...';
+      if (ocrProgress) ocrProgress.style.width = '15%';
+      if (ocrPercent) ocrPercent.innerText = '15%';
+
+      try {
+        const result = await Tesseract.recognize(
+          file,
+          'spa+eng',
+          {
+            logger: m => {
+              if (m.status === 'recognizing text' && ocrProgress && ocrPercent) {
+                const pct = Math.round((m.progress || 0) * 100);
+                ocrProgress.style.width = `${Math.max(15, pct)}%`;
+                ocrPercent.innerText = `${pct}%`;
+                if (ocrStatus) ocrStatus.innerText = `Leyendo cuotas, partidos y ganancias (${pct}%)...`;
+              }
+            }
+          }
+        );
+
+        const texto = (result && result.data && result.data.text) ? result.data.text : '';
+        console.log('OCR Texto Extraído de Betano:', texto);
+
+        if (ocrBox) ocrBox.style.display = 'none';
+
+        interpretarTextoBetano(texto, file.name || 'Captura Betano');
+      } catch (err) {
+        console.error('Error en OCR:', err);
+        if (ocrBox) ocrBox.style.display = 'none';
+        alert('No se pudo leer la imagen automáticamente. Intenta con una imagen más nítida o escribe la cuota manualmente.');
+      }
+    }
+
+    function interpretarTextoBetano(rawText, nombreArchivo) {
+      const lineas = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const textLower = rawText.toLowerCase();
+
+      // 1. Detectar Estado (Ganada, Perdida, En Juego, Cash Out)
+      let estado = 'en_juego';
+      let estadoLabel = 'En Juego';
+      if (textLower.includes('ganada') || textLower.includes('ganador') || textLower.includes('acertada')) {
+        estado = 'Ganada';
+        estadoLabel = 'Ganada ✅';
+      } else if (textLower.includes('perdida') || textLower.includes('fallada') || textLower.includes('no ganadora')) {
+        estado = 'Perdida';
+        estadoLabel = 'Perdida ❌';
+      } else if (textLower.includes('cash out') || textLower.includes('cierre') || textLower.includes('cobrada')) {
+        estado = 'Cashout';
+        estadoLabel = 'Cash Out 💵';
+      } else if (textLower.includes('anulada') || textLower.includes('cancelada')) {
+        estado = 'Anulada';
+        estadoLabel = 'Anulada ⚪';
+      }
+
+      // 2. Extraer Valores Monetarios ($ COP)
+      const montosEncontrados = [];
+      const regexMonto = /\$?\s*([1-9]\d{0,2}(?:\.\d{3})+|\d{4,9})/g;
+      let mMatch;
+      while ((mMatch = regexMonto.exec(rawText)) !== null) {
+        const val = parseFloat(mMatch[1].replace(/\./g, ''));
+        if (val >= 500 && !montosEncontrados.includes(val)) {
+          montosEncontrados.push(val);
+        }
+      }
+
+      let montoApostado = 0;
+      let montoGanancia = 0;
+
+      const matchApuesta = rawText.match(/(?:apuesta|simple|monto|stake)[^\d]*\$?\s*([1-9]\d{0,2}(?:\.\d{3})+|\d{4,9})/i);
+      if (matchApuesta) {
+        montoApostado = parseFloat(matchApuesta[1].replace(/\./g, ''));
+      }
+
+      const matchGanancia = rawText.match(/(?:ganancias?|cobro|retorno|premio|pagado)[^\d]*\$?\s*([1-9]\d{0,2}(?:\.\d{3})+|\d{4,9})/i);
+      if (matchGanancia) {
+        montoGanancia = parseFloat(matchGanancia[1].replace(/\./g, ''));
+      }
+
+      if (!montoApostado && montosEncontrados.length > 0) {
+        montoApostado = montosEncontrados[0];
+      }
+      if (!montoGanancia && montosEncontrados.length > 1) {
+        montoGanancia = montosEncontrados[1];
+      }
+
+      // 3. Extraer Cuota (@ 1.78)
+      let cuota = 0;
+      const cuotasPosibles = [];
+      const regexCuota = /\b([1-9]\d{0,1}[.,]\d{2})\b/g;
+      let cMatch;
+      while ((cMatch = regexCuota.exec(rawText)) !== null) {
+        const num = parseFloat(cMatch[1].replace(',', '.'));
+        if (num >= 1.05 && num <= 300.0) {
+          cuotasPosibles.push(num);
+        }
+      }
+
+      if (cuotasPosibles.length > 0) {
+        if (montoApostado > 0 && montoGanancia > 0) {
+          const cuotaCalc = parseFloat((montoGanancia / montoApostado).toFixed(2));
+          const coincidencia = cuotasPosibles.find(c => Math.abs(c - cuotaCalc) <= 0.03);
+          cuota = coincidencia || cuotaCalc || cuotasPosibles[0];
+        } else {
+          cuota = cuotasPosibles[0];
+        }
+      }
+
+      if (!cuota || cuota <= 1.0) {
+        cuota = parseFloat(document.getElementById('dynCuota').value) || 1.80;
+      }
+
+      if (montoApostado > 0 && !montoGanancia) {
+        montoGanancia = Math.round(montoApostado * cuota);
+      }
+
+      const beneficioNeto = (montoGanancia > montoApostado) ? (montoGanancia - montoApostado) : 0;
+
+      // 4. Extraer Nombres de Equipos / Partidos
+      let partidoDetectado = 'Evento Betano Escaneado';
+      let pickDetectado = 'Selección detectada';
+      let mercadoDetectado = 'Mercado Oficial Betano';
+
+      for (let i = 0; i < lineas.length; i++) {
+        const l = lineas[i];
+        if (l.toLowerCase().includes('vs') || l.toLowerCase().includes(' - ')) {
+          partidoDetectado = l;
+          break;
+        }
+        if (l.includes('Besiktas') || l.includes('Crystal Palace') || l.includes('Leverkusen') || l.includes('América')) {
+          partidoDetectado = l;
+          if (lineas[i+1] && (lineas[i+1].includes('Crystal') || lineas[i+1].includes('Palace') || lineas[i+1].includes('FC'))) {
+            partidoDetectado = `${l} vs ${lineas[i+1]}`;
+          }
+          break;
+        }
+      }
+
+      for (const l of lineas) {
+        if (/más|menos|ambos|goles|1x2|gana|empate/i.test(l)) {
+          if (l.length < 45 && !l.toLowerCase().includes('simple')) {
+            pickDetectado = l;
+            break;
+          }
+        }
+      }
+
+      // 5. Generar Código y Guardar en Base de Datos Dinámica
+      const code = 'IMG_' + Date.now().toString().slice(-4);
+      const tipoBoleto = textLower.includes('combinada') ? 'Combinada' : (textLower.includes('builder') ? 'BetBuilder' : 'Simple');
+
+      BETANO_DATABASE[code] = {
+        code: code,
+        tipo: `${tipoBoleto} (${estadoLabel})`,
+        cuota: cuota,
+        montoApostado: montoApostado || 10000,
+        gananciaTotal: montoGanancia || Math.round((montoApostado || 10000) * cuota),
+        beneficioLimpio: beneficioNeto || Math.round((montoApostado || 10000) * (cuota - 1)),
+        estado: estado,
+        partidos: [
+          {
+            evento: `⚽ ${partidoDetectado}`,
+            pick: `${pickDetectado} ${estado === 'Ganada' ? '✅' : ''}`,
+            mercado: mercadoDetectado,
+            odds: cuota,
+            color: estado === 'Ganada' ? '#10b981' : (estado === 'Perdida' ? '#ef4444' : '#ff5e00')
+          }
+        ],
+        cashoutNote: estado === 'Ganada'
+          ? `🎉 ¡Boleto GANADO detectado por IA OCR! Apostaste: ${formatCOP(montoApostado || 10000)} @ ${cuota.toFixed(2)}. Ganancia total: ${formatCOP(montoGanancia)} (Beneficio neto: +${formatCOP(beneficioNeto)}).`
+          : `Boleto detectado de la captura de pantalla con cuota @ ${cuota.toFixed(2)}.`
+      };
+
+      // Cargar en el input y disparar análisis
+      document.getElementById('betanoLinkInput').value = code;
+      analizarLinkBetano();
+
+      // Notificación visual de éxito del escáner
+      const feedbackEl = document.getElementById('betanoStatusFeedback');
+      if (feedbackEl) {
+        feedbackEl.innerHTML = `
+          <div style="background: rgba(16, 185, 129, 0.2); border: 1.5px solid #10b981; border-radius: 0.65rem; padding: 0.65rem 0.85rem; margin-top: 0.35rem; color: #34d399; font-size: 0.82rem; line-height: 1.45;">
+            <strong>📸 ¡Captura de Betano Escaneada con Éxito!</strong><br>
+            • Estado: <strong>${estadoLabel}</strong> &bull; Cuota detectada: <strong>@ ${cuota.toFixed(2)}</strong><br>
+            ${montoApostado > 0 ? `• Invertido: <strong>${formatCOP(montoApostado)}</strong> &bull; Cobro: <strong>${formatCOP(montoGanancia)}</strong> &bull; Ganancia: <strong style="color: #fff;">+${formatCOP(beneficioNeto)}</strong>` : ''}
+          </div>
+        `;
+      }
+    }
+
+    // Escuchar cuando el usuario pega una imagen del portapapeles con Ctrl + V
+    window.addEventListener('paste', function(e) {
+      const items = (e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData)) ? (e.clipboardData || e.originalEvent.clipboardData).items : null;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type && items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            procesarImagenFile(file);
+            break;
+          }
+        }
+      }
+    });
 
     function renderPartidosBoleto(partidos) {
       const container = document.getElementById('betanoPartidosContainer');

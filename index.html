@@ -358,6 +358,20 @@
       </div>
     </div>
 
+    <!-- ESCUDO ANTIQUIEBRA: STOP LOSS Y STOP WIN DIARIO -->
+    <div id="escudoAntiquiebraBar" style="background: rgba(15, 23, 42, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0.9rem; padding: 0.65rem 0.95rem; margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span style="font-size: 1.2rem;">🛡️</span>
+        <div>
+          <div style="font-size: 0.76rem; font-weight: 800; color: #fff;">Escudo Antiquiebra Activo</div>
+          <div style="font-size: 0.68rem; color: #94a3b8;" id="txtLimitesDiarios">Stop Loss Hoy: -$15.000 COP (15%) &bull; Stop Win: +$20.000 COP (20%)</div>
+        </div>
+      </div>
+      <div id="badgeEstadoHoy" style="font-size: 0.72rem; padding: 0.25rem 0.65rem; border-radius: 9999px; font-weight: 800; background: rgba(16, 185, 129, 0.15); color: #34d399;">
+        🟢 Operativa Normal
+      </div>
+    </div>
+
     <!-- TABS -->
     <div class="tabs-bar">
       <button class="tab-btn active" onclick="switchTab('apuesta')">
@@ -433,6 +447,41 @@
           <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 0.85rem; padding: 0.95rem; font-size: 0.84rem; line-height: 1.5;" id="boxEstrategiaBetano">
             <!-- Rellenado por JS -->
           </div>
+
+          <!-- ASESOR DE SALIDA / CASH OUT EN VIVO (CUÁNDO SALIR DE LA APUESTA) -->
+          <div style="margin-top: 0.9rem; background: rgba(8, 14, 26, 0.85); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 0.85rem; padding: 0.95rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+              <div style="font-weight: 800; color: #fbbf24; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>💵</span> Asesor de Cash Out: ¿Cuándo salir de Betano?
+              </div>
+              <span class="box-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.68rem;">En Vivo</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; margin-bottom: 0.65rem;">
+              <div>
+                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Oferta Cash Out que te da Betano ($ COP):</label>
+                <input type="number" id="inputCashoutOferta" placeholder="Ej: 3050" oninput="evaluarCashoutEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
+              </div>
+              <div>
+                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Situación Actual del Boleto:</label>
+                <select id="selectCashoutSituacion" onchange="evaluarCashoutEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.84rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
+                  <option value="falta_partido">Falta 1 partido por jugarse en la combinada</option>
+                  <option value="minutos_finales">Van ganando y faltan 10-15 min para el final</option>
+                  <option value="rival_presiona">El rival está atacando mucho / peligro inminente</option>
+                  <option value="controlado">Partido dominado con tranquilidad</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Veredicto Matemático del Cash Out -->
+            <div id="boxVeredictoCashout" style="background: rgba(0,0,0,0.3); border-radius: 0.65rem; padding: 0.75rem; font-size: 0.82rem; line-height: 1.45; border-left: 3px solid #fbbf24;">
+              💡 <em>Ingresa arriba cuánto te ofrece Betano en este momento para recibir la recomendación matemática en tiempo real sobre si debes cobrar ya o dejar correr.</em>
+            </div>
+
+            <button type="button" class="btn btn-gold" id="btnCobrarCashout" onclick="cobrarCashoutModal()" style="margin-top: 0.65rem; padding: 0.6rem 1rem; font-size: 0.84rem; display: none;">
+              <span>✅</span> Cobrar este Cash Out y Sumar a mi Bankroll
+            </button>
+          </div>
         </div>
       </div>
 
@@ -474,6 +523,20 @@
               <span class="chip" onclick="setCuotaDirecta(2.50)">@ 2.50</span>
               <span class="chip" onclick="setCuotaDirecta(3.45)">@ 3.45</span>
               <span class="chip" onclick="setCuotaDirecta(7.50)">@ 7.50</span>
+            </div>
+          </div>
+
+          <!-- Atajos de Stake Disciplinado (% de tu Caja) -->
+          <div class="form-group" style="margin-bottom: 0.95rem;">
+            <label style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Atajos de Stake Seguro (% de tu Bank):</span>
+              <span id="lblStakeTooltip" style="color: #38bdf8; font-size: 0.72rem; font-weight: 700;">Caja: $ 100.000 COP</span>
+            </label>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; margin-top: 0.25rem;">
+              <button type="button" class="btn btn-outline" style="padding: 0.45rem 0.2rem; font-size: 0.75rem;" onclick="setStakeDirecto(0.01)" id="btnStake1">1% ($1.000)</button>
+              <button type="button" class="btn btn-outline" style="padding: 0.45rem 0.2rem; font-size: 0.75rem;" onclick="setStakeDirecto(0.015)" id="btnStake15">1.5% ($1.500)</button>
+              <button type="button" class="btn btn-outline" style="padding: 0.45rem 0.2rem; font-size: 0.75rem;" onclick="setStakeDirecto(0.02)" id="btnStake2">2% ($2.000)</button>
+              <button type="button" class="btn btn-outline" style="padding: 0.45rem 0.2rem; font-size: 0.75rem; border-color: rgba(239, 68, 68, 0.4);" onclick="setStakeDirecto(0.03)" id="btnStake3">3% Máx ($3.000)</button>
             </div>
           </div>
 
@@ -1197,6 +1260,207 @@
         `;
         tbody.appendChild(tr);
       });
+
+      actualizarBotonesStake();
+      actualizarEscudoAntiquiebra();
+    }
+
+    // --- ATAJOS DE STAKE DISCIPLINADO ---
+    function actualizarBotonesStake() {
+      const s1 = Math.round(bankrollTotal * 0.01);
+      const s15 = Math.round(bankrollTotal * 0.015);
+      const s2 = Math.round(bankrollTotal * 0.02);
+      const s3 = Math.round(bankrollTotal * 0.03);
+
+      const elTooltip = document.getElementById('lblStakeTooltip');
+      if (elTooltip) elTooltip.innerText = `Caja: ${formatCOP(bankrollTotal)}`;
+
+      const b1 = document.getElementById('btnStake1');
+      const b15 = document.getElementById('btnStake15');
+      const b2 = document.getElementById('btnStake2');
+      const b3 = document.getElementById('btnStake3');
+
+      if (b1) b1.innerText = `1% (${formatCOP(s1)})`;
+      if (b15) b15.innerText = `1.5% (${formatCOP(s15)})`;
+      if (b2) b2.innerText = `2% (${formatCOP(s2)})`;
+      if (b3) b3.innerText = `3% Máx (${formatCOP(s3)})`;
+    }
+
+    function setStakeDirecto(pct) {
+      seleccionarCaso('normal');
+      const monto = Math.round(bankrollTotal * pct);
+      document.getElementById('dynMontoManual').value = monto;
+      calcularEnVivo();
+    }
+
+    // --- ESCUDO ANTIQUIEBRA: STOP LOSS Y STOP WIN DIARIO ---
+    function actualizarEscudoAntiquiebra() {
+      const hoyStr = new Date().toLocaleDateString('es-CO');
+      let netoHoy = 0;
+      movimientos.forEach(m => {
+        if (m.fecha && m.fecha.includes(hoyStr)) {
+          netoHoy += Number(m.neto) || 0;
+        }
+      });
+
+      const stopLoss = Math.round(bankrollTotal * 0.15); // 15% de pérdida máx
+      const stopWin = Math.round(bankrollTotal * 0.20);  // 20% de ganancia objetivo
+
+      const txtLimites = document.getElementById('txtLimitesDiarios');
+      const badgeEstado = document.getElementById('badgeEstadoHoy');
+
+      if (txtLimites) {
+        txtLimites.innerText = `Stop Loss: -${formatCOP(stopLoss)} (15%) • Stop Win: +${formatCOP(stopWin)} (20%) • Rendimiento Hoy: ${netoHoy >= 0 ? '+' : ''}${formatCOP(netoHoy)}`;
+      }
+
+      if (badgeEstado) {
+        if (netoHoy <= -stopLoss) {
+          badgeEstado.style.background = 'rgba(239, 68, 68, 0.25)';
+          badgeEstado.style.color = '#f87171';
+          badgeEstado.innerText = '🛑 STOP LOSS ACTIVADO (¡Pausa por hoy!)';
+          badgeEstado.style.border = '1px solid #ef4444';
+        } else if (netoHoy >= stopWin) {
+          badgeEstado.style.background = 'rgba(16, 185, 129, 0.25)';
+          badgeEstado.style.color = '#34d399';
+          badgeEstado.innerText = '🏆 META ALCANZADA (¡Retírate ganador!)';
+          badgeEstado.style.border = '1px solid #10b981';
+        } else {
+          badgeEstado.style.background = 'rgba(16, 185, 129, 0.15)';
+          badgeEstado.style.color = '#34d399';
+          badgeEstado.innerText = '🟢 Operativa Normal';
+          badgeEstado.style.border = 'none';
+        }
+      }
+    }
+
+    // --- ASESOR DE SALIDA / CASH OUT EN VIVO ---
+    function evaluarCashoutEnVivo() {
+      const oferta = parseFloat(document.getElementById('inputCashoutOferta').value) || 0;
+      const situacion = document.getElementById('selectCashoutSituacion').value;
+      const boxVeredicto = document.getElementById('boxVeredictoCashout');
+      const btnCobrar = document.getElementById('btnCobrarCashout');
+
+      if (!oferta || oferta <= 0) {
+        boxVeredicto.innerHTML = '💡 <em>Ingresa arriba cuánto te ofrece Betano en este momento para recibir la recomendación matemática en tiempo real sobre si debes cobrar ya o dejar correr.</em>';
+        boxVeredicto.style.borderLeftColor = '#fbbf24';
+        btnCobrar.style.display = 'none';
+        return;
+      }
+
+      let invertido = 0;
+      const cuota = parseFloat(document.getElementById('dynCuota').value) || 1.80;
+
+      if (casoActual === 'rescate') {
+        const costoPerdida = parseFloat(document.getElementById('dynPerdida').value) || 0;
+        invertido = costoPerdida > 0 ? (costoPerdida / (cuota - 1)) : (bankrollTotal * 0.01);
+      } else {
+        invertido = parseFloat(document.getElementById('dynMontoManual').value) || (bankrollTotal * 0.02);
+      }
+
+      const premioMaximo = invertido * cuota;
+      const gananciaAsegurada = oferta - invertido;
+      const roi = invertido > 0 ? ((gananciaAsegurada / invertido) * 100) : 0;
+      const pctPremioCapturado = premioMaximo > 0 ? ((oferta / premioMaximo) * 100) : 0;
+
+      btnCobrar.style.display = 'block';
+
+      let veredictoHtml = '';
+      if (situacion === 'rival_presiona' || situacion === 'minutos_finales') {
+        if (gananciaAsegurada > 0) {
+          boxVeredicto.style.borderLeftColor = '#10b981';
+          veredictoHtml = `
+            <div style="font-weight: 800; color: #34d399; margin-bottom: 0.25rem;">
+              🟢 ¡RECOMENDADO COBRAR YA (CASH OUT INTELIGENTE)!
+            </div>
+            <div>
+              • <strong>Oferta de Betano:</strong> ${formatCOP(oferta)}.<br>
+              • <strong>Ganancia neta asegurada:</strong> <strong style="color: #34d399;">+${formatCOP(gananciaAsegurada)} (+${roi.toFixed(1)}% ROI)</strong>.<br>
+              • <strong>Capturas el ${pctPremioCapturado.toFixed(1)}% del premio máximo</strong> sin correr el peligro de un gol en contra en los minutos finales.
+            </div>
+          `;
+        } else {
+          boxVeredicto.style.borderLeftColor = '#f59e0b';
+          veredictoHtml = `
+            <div style="font-weight: 800; color: #fbbf24; margin-bottom: 0.25rem;">
+              🟡 CONTROL DE DAÑOS / SALIDA DEFENSIVA:
+            </div>
+            <div>
+              • La oferta es de <strong>${formatCOP(oferta)}</strong> (rescatas el ${((oferta/invertido)*100).toFixed(1)}% de tu dinero).<br>
+              • Como el rival está atacando mucho, cobrar evita que pierdas el 100% de la apuesta si empatan.
+            </div>
+          `;
+        }
+      } else if (situacion === 'falta_partido') {
+        if (pctPremioCapturado >= 50 || roi >= 150) {
+          boxVeredicto.style.borderLeftColor = '#10b981';
+          veredictoHtml = `
+            <div style="font-weight: 800; color: #34d399; margin-bottom: 0.25rem;">
+              🟢 ¡EXCELENTE OPORTUNIDAD DE CIERRE ANTICIPADO!
+            </div>
+            <div>
+              • Ya acertaste los primeros partidos y Betano te asegura <strong>${formatCOP(oferta)}</strong> (+${roi.toFixed(1)}% de beneficio neto).<br>
+              • <strong>Regla Profesional:</strong> Cobrar aquí te garantiza una gran victoria sin tener que sufrir el último partido de la combinada.
+            </div>
+          `;
+        } else {
+          boxVeredicto.style.borderLeftColor = '#38bdf8';
+          veredictoHtml = `
+            <div style="font-weight: 800; color: #38bdf8; margin-bottom: 0.25rem;">
+              🔵 ESPERA AL INICIO DEL PARTIDO:
+            </div>
+            <div>
+              • La oferta aún es baja (${pctPremioCapturado.toFixed(1)}% del premio). Espera a ver cómo arranca el último partido para una mejor oferta.
+            </div>
+          `;
+        }
+      } else {
+        boxVeredicto.style.borderLeftColor = '#38bdf8';
+        veredictoHtml = `
+          <div style="font-weight: 800; color: #38bdf8; margin-bottom: 0.25rem;">
+            🔵 PARTIDO CONTROLADO:
+          </div>
+          <div>
+            • Oferta actual: <strong>${formatCOP(oferta)}</strong> (Capturas el ${pctPremioCapturado.toFixed(1)}% del premio máximo).<br>
+            • Si el equipo domina tranquilamente, puedes dejar correr hasta el minuto 75-80 para cobrar un monto aún mayor.
+          </div>
+        `;
+      }
+
+      boxVeredicto.innerHTML = veredictoHtml;
+    }
+
+    function cobrarCashoutModal() {
+      const oferta = parseFloat(document.getElementById('inputCashoutOferta').value) || 0;
+      if (!oferta || oferta <= 0) return alert('Ingresa un monto válido de Cash Out');
+
+      const cuota = parseFloat(document.getElementById('dynCuota').value) || 1.80;
+      let invertido = 0;
+      if (casoActual === 'rescate') {
+        const costoPerdida = parseFloat(document.getElementById('dynPerdida').value) || 0;
+        invertido = costoPerdida > 0 ? (costoPerdida / (cuota - 1)) : (bankrollTotal * 0.01);
+      } else {
+        invertido = parseFloat(document.getElementById('dynMontoManual').value) || (bankrollTotal * 0.02);
+      }
+
+      const neto = oferta - invertido;
+
+      if (confirm(`¿Confirmas que cobraste el Cash Out en Betano por ${formatCOP(oferta)}? (Beneficio neto: ${formatCOP(neto)})`)) {
+        bankrollTotal += neto;
+        movimientos.unshift({
+          id: Date.now(),
+          fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          tipo: 'Cash Out Cobrado (Betano)',
+          categoria: neto >= 0 ? 'ganada' : 'perdida',
+          concepto: `Salida Anticipada Betano (@ ${cuota.toFixed(2)})`,
+          cuota: cuota,
+          invertido: invertido,
+          retorno: oferta,
+          neto: neto
+        });
+
+        alert(`✅ ¡Cash Out Registrado! Se sumaron ${formatCOP(oferta)} a tu balance.\nNuevo Bankroll: ${formatCOP(bankrollTotal)}.`);
+        guardarEstado();
+      }
     }
 
     function ajustarBankrollModal() {
@@ -1335,6 +1599,7 @@
       document.getElementById('betanoCuotaTotal').innerText = `@ ${parseFloat(paramCuota).toFixed(2)}`;
     }
     calcularEnVivo();
+    evaluarCashoutEnVivo();
   </script>
 </body>
 </html>

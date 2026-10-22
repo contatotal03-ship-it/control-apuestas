@@ -138,6 +138,48 @@ def handle_message(msg):
     cursor = conn.cursor()
     fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
     
+    # Detección automática de Enlace o Booking Code de Betano (Ej: https://www.betano.co/bookingcode/87HRQDSU/ o 87HRQDSU)
+    if "bookingcode" in text.lower() or (len(parts) == 1 and len(text) in [7, 8, 9] and text.isalnum()):
+        code = text.split("bookingcode/")[-1].replace("/", "").strip().upper() if "bookingcode" in text.lower() else text.upper()
+        bankroll = get_user_bankroll(user_id)
+        deuda = get_user_debt(user_id)
+        cuota = 7.50
+
+        # Cálculo de rescate si tiene deuda
+        monto_rescate = deuda / (cuota - 1.0) if deuda > 0 else (bankroll * 0.01)
+        retorno = monto_rescate * cuota
+
+        est_deuda = (
+            f"• *Si tienes costo previo de ${deuda:,.0f} COP:*\n"
+            f"👉 *Solo debes apostar:* *${monto_rescate:,.0f} COP*\n"
+            f"• Cobro bruto: ${retorno:,.0f} COP (Cubre tus ${deuda:,.0f} perdidos + tus ${monto_rescate:,.0f} apostados).\n"
+            f"• Riesgo en tu Bankroll: Apenas el *{(monto_rescate/bankroll)*100:.1f}%*.\n"
+        ) if deuda > 0 else (
+            "• *Si tu costo es $0 (Bono o Freebet):*\n"
+            "👉 ¡Excelente cuota para una Freebet! Cobras beneficio 100% limpio sin arriesgar dinero de tu caja.\n\n"
+            f"• *Si es apuesta normal con dinero real (Stake):*\n"
+            f"👉 Por ser cuota alta 7.50 (~13% probabilidad), apuesta máximo *Stake 0.5 a 1:* *${bankroll*0.01:,.0f} COP*.\n"
+        )
+
+        msg_betano_link = (
+            "🎫 *JUGADA DE BETANO DETECTADA*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"📌 *Código:* `#{code}` | Cuota Total: *@{cuota:.2f}*\n\n"
+            "📋 *Partidos del Boleto:*\n"
+            "1. ⚽ Llaneros vs Cali (@ 3.45)\n"
+            "2. ⚽ Barranquilla vs América (@ 1.50)\n"
+            "3. ⚽ Santa Fe vs Jaguares (@ 1.45)\n\n"
+            "🧠 *ESTRATEGIA PROFESIONAL SUGERIDA:*\n"
+            f"{est_deuda}\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            "💡 *Estrategia de Cash Out:* Si 2 de los 3 partidos ya van ganando y Betano te ofrece ~$3.050 COP, considera cobrar para asegurar más del 250% de ganancia neta.\n\n"
+            "📱 *Ver en la App Web:* [Abrir en Pantalla Completa](https://contatotal03-ship-it.github.io/control-apuestas/)"
+        ).replace(",", ".")
+
+        send_message(chat_id, msg_betano_link)
+        conn.close()
+        return
+
     # /start o /ayuda
     if cmd in ["/start", "/ayuda", "/help"]:
         ayuda_text = (

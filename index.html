@@ -494,7 +494,7 @@
           <div class="input-row">
             <div class="form-group" id="grpMontoLibre" style="display: none;">
               <label><span>Monto de la Apuesta ($ COP):</span></label>
-              <input type="number" id="dynMontoManual" value="20000" oninput="calcularEnVivo()" placeholder="20000">
+              <input type="number" id="dynMontoManual" oninput="calcularEnVivo()" placeholder="Ej: 2000">
             </div>
             <div class="form-group">
               <label><span>Ganancia Extra Deseada:</span></label>
@@ -856,6 +856,9 @@
         badgeCaso.innerText = 'Stake Libre (Costo $0 de rescate)';
         badgeCaso.style.background = 'rgba(56, 189, 248, 0.2)';
         badgeCaso.style.color = '#38bdf8';
+        if (!document.getElementById('dynMontoManual').value) {
+          document.getElementById('dynMontoManual').value = Math.round(bankrollTotal * 0.02);
+        }
       } else if (caso === 'freebet') {
         document.getElementById('pillFreebet').classList.add('active');
         grpCosto.style.display = 'none';
@@ -924,11 +927,30 @@
         return;
       }
 
-      if (casoActual === 'normal' || costoPerdida === 0) {
-        // CASO NORMAL O COSTO CERO DE RESCATE
-        montoApostar = montoManual;
+      if (casoActual === 'rescate') {
+        if (costoPerdida === 0 && gananciaExtra === 0) {
+          // Deuda en $0 en Modo Rescate: No hay nada que recuperar
+          document.getElementById('dynMontoApostar').innerText = '$ 0 COP';
+          document.getElementById('dynRetorno').innerText = '$ 0 COP';
+          document.getElementById('dynBeneficioLimpio').innerText = '$ 0 COP';
+          document.getElementById('dynPctBank').innerText = '0.0%';
+
+          const riskBanner = document.getElementById('dynRiskBanner');
+          const badgeSemaforo = document.getElementById('badgeSemaforo');
+          riskBanner.className = 'risk-banner risk-safe';
+          badgeSemaforo.style.background = 'rgba(16, 185, 129, 0.2)';
+          badgeSemaforo.style.color = '#34d399';
+          badgeSemaforo.innerText = '✅ Deuda en $0';
+          document.getElementById('dynRiskText').innerHTML = `<strong>¡Caja libre de deudas!</strong> Tu costo a recuperar es $0 COP. Para hacer una apuesta regular con tu Stake proporcional (ej: ${formatCOP(bankrollTotal * 0.01)} o ${formatCOP(bankrollTotal * 0.02)}), toca el botón <strong>"Costo $0 / Stake"</strong>.`;
+          return;
+        }
+
+        // Rescate con pérdida o ganancia extra
+        montoApostar = (costoPerdida + gananciaExtra) / (cuota - 1);
+        if (pasosSeleccionados === 2) montoApostar = montoApostar / 2;
+
         retornoBruto = montoApostar * cuota;
-        beneficioLimpio = retornoBruto - montoApostar;
+        beneficioLimpio = gananciaExtra;
         pctBank = bankrollTotal > 0 ? ((montoApostar / bankrollTotal) * 100) : 0;
 
         document.getElementById('dynMontoApostar').innerText = formatCOP(montoApostar);
@@ -936,12 +958,10 @@
         document.getElementById('dynBeneficioLimpio').innerText = formatCOP(beneficioLimpio);
         document.getElementById('dynPctBank').innerText = pctBank.toFixed(1) + '%';
       } else {
-        // CASO RESCATE CON COSTO / PÉRDIDA POSITIVA
-        montoApostar = (costoPerdida + gananciaExtra) / (cuota - 1);
-        if (pasosSeleccionados === 2) montoApostar = montoApostar / 2;
-
+        // CASO NORMAL O STAKE LIBRE
+        montoApostar = montoManual;
         retornoBruto = montoApostar * cuota;
-        beneficioLimpio = gananciaExtra;
+        beneficioLimpio = retornoBruto - montoApostar;
         pctBank = bankrollTotal > 0 ? ((montoApostar / bankrollTotal) * 100) : 0;
 
         document.getElementById('dynMontoApostar').innerText = formatCOP(montoApostar);

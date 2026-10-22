@@ -402,7 +402,7 @@
         </div>
 
         <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
-          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/7UPLY37T/" value="https://www.betano.co/bookingcode/7UPLY37T/">
+          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/W5WMGTME/" value="https://www.betano.co/bookingcode/W5WMGTME/">
           <button class="btn btn-betano" style="width: auto; min-width: 180px; padding: 0.85rem 1.4rem;" onclick="analizarLinkBetano()">
             <span>⚡</span> Cargar y Analizar Jugada
           </button>
@@ -731,6 +731,21 @@
 
     // --- BASE DE DATOS DE TICKETS Y ANALIZADOR DINÁMICO DE BETANO ---
     const BETANO_DATABASE = {
+      'W5WMGTME': {
+        code: 'W5WMGTME',
+        tipo: 'Combinada de 7 (con BetBuilders)',
+        cuota: 129.37,
+        partidos: [
+          { evento: '⚽ OFI Creta vs Bayer 04 Leverkusen', pick: 'Leverkusen Gana & Goles +1.5 & Córners +7.5', mercado: 'BetBuilder Combinado', odds: 1.80, color: '#ff5e00' },
+          { evento: '⚽ FK Jablonec vs Brighton & Hove Albion', pick: 'Brighton Gana & Brighton +1.5 Goles & Córners +8.5', mercado: 'BetBuilder Combinado', odds: 1.82, color: '#38bdf8' },
+          { evento: '⚽ Juventus FC vs Stade Rennais FC', pick: 'Juventus Gana & Córners +7.5 & Ambos reciben tarjeta', mercado: 'BetBuilder Combinado', odds: 2.55, color: '#10b981' },
+          { evento: '⚽ Besiktas JK vs Crystal Palace FC', pick: '1X & Goles +1.5 & Ambos reciben tarjeta', mercado: 'BetBuilder Combinado', odds: 2.10, color: '#f59e0b' },
+          { evento: '⚽ Celtic FC vs RC Celta de Vigo', pick: '1X & Córners +7.5', mercado: 'BetBuilder Combinado', odds: 1.95, color: '#8b5cf6' },
+          { evento: '⚽ AFC Bournemouth vs AC Milan', pick: 'Ambos equipos anotan & Goles +2.5', mercado: 'BetBuilder Combinado', odds: 1.98, color: '#ec4899' },
+          { evento: '⚽ AS Mónaco vs SC Friburgo', pick: 'Ambos equipos anotan & Goles +2.5', mercado: 'BetBuilder Combinado', odds: 1.91, color: '#14b8a6' }
+        ],
+        cashoutNote: '¡Atención a Cash Out! Al ser una combinada de cuota 129.37 con partidos en diferentes horarios, si los primeros 3 o 4 partidos ya ganaron, Betano te ofrecerá un Cash Out de más de $30.000 COP sobre una apuesta de $1.000 (+3.000% de ganancia neta). ¡Asegura el dinero antes del último partido!'
+      },
       '7UPLY37T': {
         code: '7UPLY37T',
         tipo: 'BetBuilder (Creador de Apuesta)',
@@ -798,7 +813,11 @@
 
       // Si no está en base de datos predefinida, crear boleto dinámico con opción a editar
       if (!boleto) {
-        let cuotaActual = parseFloat(document.getElementById('dynCuota').value) || 2.00;
+        let cuotaActual = (typeof paramCode !== 'undefined' && paramCode === code && typeof paramCuota !== 'undefined' && paramCuota) ? parseFloat(paramCuota) : 0;
+        if (!cuotaActual || isNaN(cuotaActual)) {
+          let inputPrompt = prompt(`Boleto Betano #${code} detectado.\nIngresa la cuota total de este boleto en Betano:`, '2.00');
+          cuotaActual = parseFloat(inputPrompt) || parseFloat(document.getElementById('dynCuota').value) || 2.00;
+        }
         boleto = {
           code: code,
           tipo: `Boleto Betano #${code}`,
@@ -808,6 +827,7 @@
           ],
           cashoutNote: 'Evalúa Cash Out en vivo si tu jugada va a favor antes de que termine el tiempo reglamentario.'
         };
+        BETANO_DATABASE[code] = boleto;
       }
 
       const cuotaBoleto = boleto.cuota;

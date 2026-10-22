@@ -140,12 +140,22 @@ def obtener_info_betano(code_or_url):
             legs = data.get('data', {}).get('legs', [])
             bets = data.get('data', {}).get('bets', [])
             
-            cuota_total = 1.0
-            if bets and 'odds' in bets[0] and float(bets[0]['odds']) > 0:
-                cuota_total = float(bets[0]['odds'])
-            elif legs:
+            # Buscar si hay apuesta combinada / acumuladora
+            acc_bet = next((b for b in bets if b.get('type', '').startswith('ACC')), None)
+            if acc_bet and float(acc_bet.get('odds', 0)) > 0:
+                cuota_total = float(acc_bet['odds'])
+                tipo_boleto = acc_bet.get('typeName', f'Combinada de {len(legs)}')
+            elif len(legs) > 1:
+                cuota_total = 1.0
                 for l in legs:
                     cuota_total *= float(l.get('odds', 1.0))
+                tipo_boleto = f"Combinada de {len(legs)}"
+            elif bets and 'odds' in bets[0] and float(bets[0]['odds']) > 0:
+                cuota_total = float(bets[0]['odds'])
+                tipo_boleto = bets[0].get('typeName', 'Simple')
+            else:
+                cuota_total = float(legs[0].get('odds', 1.0)) if legs else 1.0
+                tipo_boleto = 'Simple'
 
             partidos = []
             es_betbuilder = False
@@ -172,7 +182,11 @@ def obtener_info_betano(code_or_url):
                     'odds': float(l.get('odds', 1.0))
                 })
 
-            tipo_boleto = "BetBuilder (Creador de Apuesta)" if es_betbuilder else (bets[0].get('typeName', 'Boleto') if bets else f'Combinada de {len(legs)}')
+            if len(legs) == 1 and es_betbuilder:
+                tipo_boleto = "BetBuilder (Creador de Apuesta)"
+            elif len(legs) > 1:
+                tipo_boleto = f"Combinada de {len(legs)}" + (" (con BetBuilders)" if es_betbuilder else "")
+
             return {
                 'success': True,
                 'code': code,

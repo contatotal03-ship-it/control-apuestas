@@ -388,7 +388,7 @@
         </div>
 
         <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
-          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/87HRQDSU/" value="https://www.betano.co/bookingcode/87HRQDSU/">
+          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/M83S7XXL/" value="https://www.betano.co/bookingcode/M83S7XXL/">
           <button class="btn btn-betano" style="width: auto; min-width: 180px; padding: 0.85rem 1.4rem;" onclick="analizarLinkBetano()">
             <span>⚡</span> Cargar y Analizar Jugada
           </button>
@@ -677,28 +677,83 @@
       if (target) target.classList.add('active');
     }
 
-    // --- ANALIZADOR DE LINK / BOOKING CODE DE BETANO & ESTRATEGIA PRO ---
+    // --- BASE DE DATOS DE TICKETS Y ANALIZADOR DINÁMICO DE BETANO ---
+    const BETANO_DATABASE = {
+      'M83S7XXL': {
+        code: 'M83S7XXL',
+        tipo: 'Simple',
+        cuota: 1.72,
+        partidos: [
+          { evento: '⚽ Club América vs CF Pachuca', pick: 'Club América Gana', mercado: 'Resultado del Partido (1X2)', odds: 1.72, color: '#ff5e00' }
+        ],
+        cashoutNote: 'Al ser apuesta simple (@ 1.72), si Club América anota primero o domina el partido, Betano te ofrecerá Cash Out positivo inmediato para asegurar ganancia sin esperar los 90 minutos.'
+      },
+      '87HRQDSU': {
+        code: '87HRQDSU',
+        tipo: 'Combinada de 3',
+        cuota: 7.50,
+        partidos: [
+          { evento: '⚽ Llaneros vs Cali', pick: 'Cali o Empate & Córners +8.5', mercado: 'Doble Oportunidad & Córners', odds: 3.45, color: '#ff5e00' },
+          { evento: '⚽ Barranquilla vs América', pick: 'América Gana & Goles +1.5', mercado: 'Resultado & Total Goles', odds: 1.50, color: '#38bdf8' },
+          { evento: '⚽ Santa Fe vs Jaguares', pick: 'Santa Fe Gana & Goles +1.5', mercado: 'Resultado & Total Goles', odds: 1.45, color: '#10b981' }
+        ],
+        cashoutNote: 'Si los primeros 2 partidos van ganando (Cali y América) y Betano te ofrece ~$3.050 COP, considera cobrar anticipadamente para asegurar el 250% de ganancia neta sin sufrir el último partido.'
+      }
+    };
+
+    function renderPartidosBoleto(partidos) {
+      const container = document.getElementById('betanoPartidosContainer');
+      container.innerHTML = partidos.map(p => `
+        <div style="background: rgba(0,0,0,0.3); border-left: 3px solid ${p.color || '#ff5e00'}; border-radius: 0.5rem; padding: 0.6rem 0.75rem; font-size: 0.8rem;">
+          <div style="display: flex; justify-content: space-between; font-weight: 700;">
+            <span>${p.evento}</span>
+            <span style="color: ${p.color || '#ff5e00'}; font-family: 'JetBrains Mono', monospace;">@ ${Number(p.odds).toFixed(2)}</span>
+          </div>
+          <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.15rem;">
+            ${p.pick} &bull; <span style="opacity: 0.8;">${p.mercado}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
     function analizarLinkBetano() {
       const linkRaw = document.getElementById('betanoLinkInput').value.trim();
       if (!linkRaw) return alert('Pega el enlace o booking code de Betano');
 
-      // Extraer código (ej: 87HRQDSU)
-      const codeMatch = linkRaw.match(/bookingcode\/([a-zA-Z0-9]+)/i) || linkRaw.match(/([a-zA-Z0-9]{6,10})/);
-      const code = codeMatch ? codeMatch[1].toUpperCase() : '87HRQDSU';
+      // Extraer código (ej: M83S7XXL o 87HRQDSU)
+      const codeMatch = linkRaw.match(/bookingcode\/([a-zA-Z0-9]+)/i) || linkRaw.match(/([a-zA-Z0-9]{6,12})/);
+      const code = codeMatch ? codeMatch[1].toUpperCase() : 'M83S7XXL';
 
-      // Configurar cuota de la combinada (7.50 para el ejemplo real de bet.png)
-      const cuotaBoleto = 7.50;
+      let boleto = BETANO_DATABASE[code];
+
+      // Si no está en base de datos predefinida, crear boleto dinámico con opción a editar
+      if (!boleto) {
+        let cuotaActual = parseFloat(document.getElementById('dynCuota').value) || 2.00;
+        boleto = {
+          code: code,
+          tipo: `Boleto Betano #${code}`,
+          cuota: cuotaActual,
+          partidos: [
+            { evento: `⚽ Evento Betano (#${code})`, pick: 'Selección cargada', mercado: 'Boleto compartido', odds: cuotaActual, color: '#ff5e00' }
+          ],
+          cashoutNote: 'Evalúa Cash Out en vivo si tu jugada va a favor antes de que termine el tiempo reglamentario.'
+        };
+      }
+
+      const cuotaBoleto = boleto.cuota;
       document.getElementById('dynCuota').value = cuotaBoleto.toFixed(2);
-      document.getElementById('betanoBoletoTitulo').innerText = `Combinada de 3 (#${code})`;
+      document.getElementById('betanoBoletoTitulo').innerText = `${boleto.tipo} (#${code})`;
       document.getElementById('betanoCuotaTotal').innerText = `@ ${cuotaBoleto.toFixed(2)}`;
 
-      actualizarEstrategiaBetano(cuotaBoleto);
+      renderPartidosBoleto(boleto.partidos);
+      actualizarEstrategiaBetano(cuotaBoleto, boleto.cashoutNote);
       calcularEnVivo();
     }
 
-    function actualizarEstrategiaBetano(cuota) {
+    function actualizarEstrategiaBetano(cuota, customCashout) {
       const box = document.getElementById('boxEstrategiaBetano');
       const perdida = parseFloat(document.getElementById('dynPerdida').value) || 0;
+      const cashNote = customCashout || 'Evalúa Cash Out según el avance de tus selecciones.';
 
       let html = '';
 
@@ -706,40 +761,55 @@
         const montoRequerido = perdida / (cuota - 1);
         const cobroBruto = montoRequerido * cuota;
         const pctBank = (montoRequerido / bankrollTotal) * 100;
+        const advertenciaCuota = cuota < 2.0 ? `
+          <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 0.5rem; padding: 0.5rem; margin-top: 0.4rem; font-size: 0.76rem; color: #fca5a5;">
+            ⚠️ <strong>Cuota menor a 2.00 (@ ${cuota.toFixed(2)}):</strong> Para recuperar $${perdida.toLocaleString('es-CO')} en 1 sola jugada necesitas apostar $${Math.round(montoRequerido).toLocaleString('es-CO')} COP (${pctBank.toFixed(1)}% de tu caja). <em>Recomendación: Si prefieres menor riesgo, activa "Recuperar en 2 Pasos" para apostar solo la mitad ($${Math.round(montoRequerido/2).toLocaleString('es-CO')} COP).</em>
+          </div>
+        ` : '';
 
         html = `
           <div style="font-weight: 800; color: #ff5e00; margin-bottom: 0.35rem;">
-            🧠 ESTRATEGIA DE RESCATE PARA CUOTA ALTA (@ ${cuota.toFixed(2)}):
+            🧠 ESTRATEGIA MATEMÁTICA DE RESCATE (@ ${cuota.toFixed(2)}):
           </div>
           <div>
-            • <strong>¡Ventaja de cuota alta!</strong> Para recuperar tus <strong>${formatCOP(perdida)}</strong> NO necesitas arriesgar $80.000 ni $100.000 de tu bolsillo.<br>
-            • <strong>Solo debes apostar:</strong> <strong style="color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 1rem;">${formatCOP(montoRequerido)}</strong>.<br>
+            • <strong>Costo/Déficit a recuperar:</strong> <strong>${formatCOP(perdida)}</strong>.<br>
+            • <strong>Apuesta requerida para quedar en $0 deuda:</strong> <strong style="color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-size: 1.05rem;">${formatCOP(montoRequerido)}</strong>.<br>
             • Cobras si gana: <strong style="color: #34d399;">${formatCOP(cobroBruto)}</strong> &rarr; Cubre los ${formatCOP(perdida)} perdidos + los ${formatCOP(montoRequerido)} de tu apuesta.<br>
-            • <strong>Protección de Capital:</strong> Esta apuesta solo representa el <strong>${pctBank.toFixed(1)}% de tu Bankroll</strong>. Si llega a fallar, tu caja no sufre un golpe pesado.
+            • <strong>Compromiso de Capital:</strong> Representa el <strong>${pctBank.toFixed(1)}% de tu Bankroll</strong>.
           </div>
+          ${advertenciaCuota}
           <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.78rem; color: #fbbf24;">
-            💡 <strong>Estrategia de Cash Out (Como en tu comprobante bet.png):</strong> Si los primeros 2 partidos van ganando (Cali y América) y Betano te ofrece $3.050 COP, considera cobrar anticipadamente para asegurar el 250% de ganancia neta sin sufrir el último partido.
+            💡 <strong>Estrategia de Cash Out:</strong> ${cashNote}
           </div>
         `;
       } else if (casoActual === 'freebet') {
+        const gananciaLimpia = (bankrollTotal * 0.01) * (cuota - 1);
         html = `
           <div style="font-weight: 800; color: #c084fc; margin-bottom: 0.35rem;">
             🎁 ESTRATEGIA DE FREEBET / BONO ($0 COSTO DE BOLSILLO):
           </div>
           <div>
-            • Como tu costo de bolsillo es <strong>$0 COP</strong>, esta combinada de cuota ${cuota.toFixed(2)} es <strong>PERFECTA</strong> para una Freebet.<br>
-            • Si aciertas, sumas ganancias netas puras sin haber arriesgado un solo peso de tu caja.<br>
-            • Si falla, tu Bankroll no se ve afectado en lo absoluto.
+            • Como tu costo de bolsillo es <strong>$0 COP</strong>, esta selección (@ ${cuota.toFixed(2)}) es <strong>100% libre de riesgo para tu caja</strong>.<br>
+            • Si aciertas, sumas ganancias netas puras sin haber arriesgado un solo peso de tu Bankroll.<br>
+            • Si falla, tu caja queda intacta en <strong>${formatCOP(bankrollTotal)}</strong>.
+          </div>
+          <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.78rem; color: #fbbf24;">
+            💡 <strong>Estrategia de Cash Out:</strong> ${cashNote}
           </div>
         `;
       } else {
+        const recomendacionStake = cuota >= 3.0 ? 'Stake 0.5 a 1% ($5.000 a $10.000 COP) por ser cuota alta' : 'Stake 1 a 2% ($10.000 a $20.000 COP) por tener cuota estándar';
         html = `
           <div style="font-weight: 800; color: #38bdf8; margin-bottom: 0.35rem;">
             🎯 ESTRATEGIA DE STAKE ORDINARIO (SIN DEUDA PREVIA):
           </div>
           <div>
-            • Como la cuota es <strong>@ ${cuota.toFixed(2)}</strong>, la probabilidad matemática estimada es del <strong>~13%</strong>.<br>
-            • <strong>Regla Profesional:</strong> Máximo <strong>Stake 0.5 a Stake 1 ($5.000 a $10.000 COP)</strong>. Jamás meter un Stake alto en combinadas de cuota superior a 3.00.
+            • Cuota: <strong>@ ${cuota.toFixed(2)}</strong> (Probabilidad implícita: <strong>${((1/cuota)*100).toFixed(1)}%</strong>).<br>
+            • <strong>Recomendación Profesional:</strong> ${recomendacionStake}.<br>
+            • Nunca arriesgues más del 3% de tu caja en un solo boleto.
+          </div>
+          <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.78rem; color: #fbbf24;">
+            💡 <strong>Estrategia de Cash Out:</strong> ${cashNote}
           </div>
         `;
       }
@@ -1213,11 +1283,28 @@
       }
     }
 
+    // Leer parámetros de URL si viene desde Telegram o link directo
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramCode = urlParams.get('code');
+    const paramCuota = urlParams.get('cuota');
+    const paramPerdida = urlParams.get('perdida');
+
+    if (paramCode) {
+      document.getElementById('betanoLinkInput').value = `https://www.betano.co/bookingcode/${paramCode}/`;
+    }
+    if (paramPerdida) {
+      deudaRecuperacion = parseFloat(paramPerdida) || deudaRecuperacion;
+    }
+
     // Inicializar
     document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion || 80000);
     document.getElementById('inputAjustarBank').value = bankrollTotal;
     renderDashboard();
     analizarLinkBetano();
+    if (paramCuota) {
+      document.getElementById('dynCuota').value = parseFloat(paramCuota).toFixed(2);
+      document.getElementById('betanoCuotaTotal').innerText = `@ ${parseFloat(paramCuota).toFixed(2)}`;
+    }
     calcularEnVivo();
   </script>
 </body>

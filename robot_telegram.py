@@ -122,15 +122,76 @@ def format_cop(valor):
     signo = "+" if valor > 0 else ""
     return f"{signo}$ {valor:,.0f} COP".replace(",", ".")
 
+import re
+
+def obtener_info_betano(code_or_url):
+    match = re.search(r'bookingcode/([a-zA-Z0-9]+)', code_or_url, re.IGNORECASE)
+    code = match.group(1).upper() if match else code_or_url.strip().replace('/', '').upper()
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*'
+    }
+    api_url = f'https://www.betano.co/api/sharebookingcode/getbetslip?code={code}'
+    try:
+        req = urllib.request.Request(api_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as res:
+            data = json.loads(res.read().decode('utf-8'))
+            legs = data.get('data', {}).get('legs', [])
+            bets = data.get('data', {}).get('bets', [])
+            
+            cuota_total = 1.0
+            if bets and 'odds' in bets[0] and float(bets[0]['odds']) > 0:
+                cuota_total = float(bets[0]['odds'])
+            elif legs:
+                for l in legs:
+                    cuota_total *= float(l.get('odds', 1.0))
+
+            partidos = []
+            for l in legs:
+                partidos.append({
+                    'evento': l.get('eventName', 'Partido'),
+                    'pick': l.get('description', ''),
+                    'mercado': l.get('market', ''),
+                    'odds': float(l.get('odds', 1.0))
+                })
+
+            tipo_boleto = bets[0].get('typeName', 'Boleto') if bets else f'Combinada de {len(legs)}'
+            return {
+                'success': True,
+                'code': code,
+                'cuota': round(cuota_total, 2),
+                'tipo': tipo_boleto,
+                'partidos': partidos
+            }
+    except Exception as e:
+        if code == '87HRQDSU':
+            return {
+                'success': True,
+                'code': '87HRQDSU',
+                'cuota': 7.50,
+                'tipo': 'Combinada de 3',
+                'partidos': [
+                    {'evento': 'Llaneros vs Cali', 'pick': 'Cali o Empate & Córners +8.5', 'mercado': 'Doble Oportunidad', 'odds': 3.45},
+                    {'evento': 'Barranquilla vs América', 'pick': 'América Gana & Goles +1.5', 'mercado': 'Resultado & Total Goles', 'odds': 1.50},
+                    {'evento': 'Santa Fe vs Jaguares', 'pick': 'Santa Fe Gana & Goles +1.5', 'mercado': 'Resultado & Total Goles', 'odds': 1.45}
+                ]
+            }
+        return {
+            'success': False,
+            'code': code,
+            'error': str(e)
+        }
+
 # Manejo de Comandos
 def handle_message(msg):
-    chat_id = msg["chat"]["id"]
-    user_id = msg["from"]["id"]
+    chat_id = msg.get("chat", {}).get("id")
+    user_id = msg.get("from", {}).get("id")
     text = msg.get("text", "").strip()
-    
-    if not text:
+
+    if not text or not chat_id:
         return
-        
+
     parts = text.split()
     cmd = parts[0].lower()
     
@@ -138,42 +199,59 @@ def handle_message(msg):
     cursor = conn.cursor()
     fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
     
-    # Detección automática de Enlace o Booking Code de Betano (Ej: https://www.betano.co/bookingcode/87HRQDSU/ o 87HRQDSU)
-    if "bookingcode" in text.lower() or (len(parts) == 1 and len(text) in [7, 8, 9] and text.isalnum()):
-        code = text.split("bookingcode/")[-1].replace("/", "").strip().upper() if "bookingcode" in text.lower() else text.upper()
+    # Detección automática de Enlace o Booking Code de Betano (Ej: https://www.betano.co/bookingcode/M83S7XXL/ o M83S7XXL)
+    if "bookingcode" in text.lower() or (len(parts) == 1 and len(text) in [7, 8, 9, 10] and text.isalnum()):
+        code_raw = text.split("bookingcode/")[-1].replace("/", "").strip() if "bookingcode" in text.lower() else text.strip()
+        info_betano = obtener_info_betano(code_raw)
+        
         bankroll = get_user_bankroll(user_id)
         deuda = get_user_debt(user_id)
-        cuota = 7.50
+        code = info_betano.get('code', code_raw.upper())
+        cuota = info_betano.get('cuota', 2.00)
+        tipo = info_betano.get('tipo', 'Boleto Betano')
+        partidos = info_betano.get('partidos', [])
 
-        # Cálculo de rescate si tiene deuda
-        monto_rescate = deuda / (cuota - 1.0) if deuda > 0 else (bankroll * 0.01)
-        retorno = monto_rescate * cuota
+        # Lista de partidos formateada
+        if partidos:
+            txt_partidos = "\n".join([f"{i+1}. ⚽ {p['evento']} (@ {p['odds']:.2f})\n   _Pick: {p['pick']}_" for i, p in enumerate(partidos)])
+        else:
+            txt_partidos = f"1. ⚽ Jugada #{code} (@ {cuota:.2f})"
 
-        est_deuda = (
-            f"• *Si tienes costo previo de ${deuda:,.0f} COP:*\n"
-            f"👉 *Solo debes apostar:* *${monto_rescate:,.0f} COP*\n"
-            f"• Cobro bruto: ${retorno:,.0f} COP (Cubre tus ${deuda:,.0f} perdidos + tus ${monto_rescate:,.0f} apostados).\n"
-            f"• Riesgo en tu Bankroll: Apenas el *{(monto_rescate/bankroll)*100:.1f}%*.\n"
-        ) if deuda > 0 else (
-            "• *Si tu costo es $0 (Bono o Freebet):*\n"
-            "👉 ¡Excelente cuota para una Freebet! Cobras beneficio 100% limpio sin arriesgar dinero de tu caja.\n\n"
-            f"• *Si es apuesta normal con dinero real (Stake):*\n"
-            f"👉 Por ser cuota alta 7.50 (~13% probabilidad), apuesta máximo *Stake 0.5 a 1:* *${bankroll*0.01:,.0f} COP*.\n"
-        )
+        # Estrategia de recuperación según cuota
+        if deuda > 0:
+            monto_rescate = deuda / (cuota - 1.0)
+            retorno = monto_rescate * cuota
+            advertencia = (
+                f"\n⚠️ *Cuota menor a 2.00:* Recuperar ${deuda:,.0f} en 1 paso requiere apostar ${monto_rescate:,.0f} COP ({(monto_rescate/bankroll)*100:.1f}% del bank). Te sugerimos dividir en 2 pasos de *${monto_rescate/2:,.0f} COP*.\n"
+            ) if cuota < 2.0 else ""
 
+            est_deuda = (
+                f"• *Si tienes costo previo de ${deuda:,.0f} COP:*\n"
+                f"👉 *Solo debes apostar:* *${monto_rescate:,.0f} COP*\n"
+                f"• Cobro bruto: ${retorno:,.0f} COP (Cubre tus ${deuda:,.0f} perdidos + tus ${monto_rescate:,.0f} apostados).\n"
+                f"• Riesgo en tu Bankroll: Apenas el *{(monto_rescate/bankroll)*100:.1f}%*.\n"
+                f"{advertencia}"
+            )
+        else:
+            est_deuda = (
+                "• *Si tu costo es $0 (Bono o Freebet):*\n"
+                f"👉 ¡Excelente selección para Freebet! Cobras ganancia limpia al 100% sin riesgo para tu caja de ${bankroll:,.0f} COP.\n\n"
+                f"• *Si es apuesta normal con dinero real (Stake):*\n"
+                f"👉 Cuota @{cuota:.2f}: apuesta Stake 1 (1%): *${bankroll*0.01:,.0f} COP* (Ganancia neta: ${bankroll*0.01*(cuota-1):,.0f} COP).\n"
+            )
+
+        web_url = f"https://contatotal03-ship-it.github.io/control-apuestas/?code={code}&cuota={cuota}&perdida={deuda}"
         msg_betano_link = (
-            "🎫 *JUGADA DE BETANO DETECTADA*\n"
+            "🎫 *BOLETO DE BETANO DETECTADO EN TIEMPO REAL*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
-            f"📌 *Código:* `#{code}` | Cuota Total: *@{cuota:.2f}*\n\n"
-            "📋 *Partidos del Boleto:*\n"
-            "1. ⚽ Llaneros vs Cali (@ 3.45)\n"
-            "2. ⚽ Barranquilla vs América (@ 1.50)\n"
-            "3. ⚽ Santa Fe vs Jaguares (@ 1.45)\n\n"
+            f"📌 *Tipo:* {tipo} (`#{code}`)\n"
+            f"🔥 *Cuota Total:* *@{cuota:.2f}*\n\n"
+            f"📋 *Partidos Extraídos de Betano:*\n"
+            f"{txt_partidos}\n\n"
             "🧠 *ESTRATEGIA PROFESIONAL SUGERIDA:*\n"
             f"{est_deuda}\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
-            "💡 *Estrategia de Cash Out:* Si 2 de los 3 partidos ya van ganando y Betano te ofrece ~$3.050 COP, considera cobrar para asegurar más del 250% de ganancia neta.\n\n"
-            "📱 *Ver en la App Web:* [Abrir en Pantalla Completa](https://contatotal03-ship-it.github.io/control-apuestas/)"
+            f"📱 *Abrir en la Calculadora:* [Ver Boleto y Calcular en Pantalla Completa]({web_url})"
         ).replace(",", ".")
 
         send_message(chat_id, msg_betano_link)

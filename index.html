@@ -372,6 +372,33 @@
       </div>
     </div>
 
+    <!-- BARRA DE MÉTRICAS PROFESIONALES: WIN RATE, YIELD, RACHA -->
+    <div id="metricasStatsBar" style="background: rgba(11, 16, 29, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0.9rem; padding: 0.75rem 1rem; margin-bottom: 0.85rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.65rem;">
+      <div style="background: rgba(0,0,0,0.3); border-radius: 0.6rem; padding: 0.5rem 0.65rem; border-left: 3px solid #10b981;">
+        <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Tasa de Acierto (Win Rate)</div>
+        <div style="font-size: 1.15rem; font-weight: 900; color: #34d399; font-family: 'JetBrains Mono', monospace;" id="statWinRate">0.0%</div>
+        <div style="font-size: 0.65rem; color: #64748b;" id="statAciertosDetalle">0G / 0P (0 totales)</div>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.3); border-radius: 0.6rem; padding: 0.5rem 0.65rem; border-left: 3px solid #38bdf8;">
+        <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Rendimiento (Yield / ROI)</div>
+        <div style="font-size: 1.15rem; font-weight: 900; color: #38bdf8; font-family: 'JetBrains Mono', monospace;" id="statYield">0.0%</div>
+        <div style="font-size: 0.65rem; color: #64748b;" id="statYieldSub">Por cada $100 apostados</div>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.3); border-radius: 0.6rem; padding: 0.5rem 0.65rem; border-left: 3px solid #f59e0b;">
+        <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Racha en Vivo (Streak)</div>
+        <div style="font-size: 1.05rem; font-weight: 800; color: #fbbf24;" id="statRacha">⚖️ Sin racha</div>
+        <div style="font-size: 0.65rem; color: #94a3b8;" id="statRachaAviso">Disciplina de juego activa</div>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.3); border-radius: 0.6rem; padding: 0.5rem 0.65rem; border-left: 3px solid #a855f7;">
+        <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Total Invertido</div>
+        <div style="font-size: 1.05rem; font-weight: 800; color: #c084fc; font-family: 'JetBrains Mono', monospace;" id="statTotalInvertido">$ 0 COP</div>
+        <div style="font-size: 0.65rem; color: #64748b;" id="statTotalApuestas">0 movimientos registrados</div>
+      </div>
+    </div>
+
     <!-- TABS -->
     <div class="tabs-bar">
       <button class="tab-btn active" onclick="switchTab('apuesta')">
@@ -484,6 +511,43 @@
             <button type="button" class="btn btn-gold" id="btnCobrarCashout" onclick="cobrarCashoutModal()" style="margin-top: 0.65rem; padding: 0.6rem 1rem; font-size: 0.84rem; display: none;">
               <span>✅</span> Cobrar este Cash Out y Sumar a mi Bankroll
             </button>
+          </div>
+
+          <!-- CALCULADORA DE COBERTURA / HEDGING (ASEGURAR GANANCIA EN ÚLTIMO PARTIDO) -->
+          <div style="margin-top: 0.9rem; background: rgba(8, 14, 26, 0.85); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 0.85rem; padding: 0.95rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+              <div style="font-weight: 800; color: #34d399; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
+                <span>🛡️</span> Calculadora de Cobertura (Hedging en Combinadas)
+              </div>
+              <span class="box-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem;">Asegurar Ganancia</span>
+            </div>
+
+            <div style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.65rem; line-height: 1.4;">
+              Si ya ganaron los primeros partidos de tu combinada y solo falta <strong>1 partido por jugarse</strong>, calcula cuánto apostar al resultado contrario para <strong>garantizar ganancia neta sí o sí</strong> sin regalarle margen al Cash Out de Betano.
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.6rem; margin-bottom: 0.65rem;">
+              <div>
+                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Premio que Cobras en la Combinada ($ COP):</label>
+                <input type="number" id="inputHedgePremio" placeholder="Ej: 129370" oninput="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff; font-family: 'JetBrains Mono', monospace;">
+              </div>
+              <div>
+                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Cuota Opuesta/Rival en el Último Partido:</label>
+                <input type="number" step="0.01" id="inputHedgeCuota" placeholder="Ej: 2.10" value="2.10" oninput="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 700;">
+              </div>
+              <div>
+                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Estrategia de Cobertura:</label>
+                <select id="selectHedgeModo" onchange="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.82rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
+                  <option value="equilibrada">100% Equilibrada (Misma ganancia gane quien gane)</option>
+                  <option value="free_roll">Riesgo Cero (Solo asegurar la inversión inicial)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Veredicto del Hedging -->
+            <div id="boxResultadoHedging" style="background: rgba(0,0,0,0.3); border-radius: 0.65rem; padding: 0.75rem; font-size: 0.82rem; line-height: 1.45; border-left: 3px solid #10b981;">
+              Calculando cobertura...
+            </div>
           </div>
         </div>
       </div>
@@ -707,10 +771,23 @@
     <div id="tab-historial" class="tab-content">
       <div class="box">
         <div class="box-header">
-          <div class="box-title"><span>📋</span> Registro Histórico</div>
+          <div class="box-title"><span>📋</span> Registro Histórico & Evolución</div>
           <div style="display: flex; gap: 0.5rem;">
             <button class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="exportarBackupJSON()">💾 Exportar</button>
             <button class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; color: #f87171;" onclick="limpiarTodoHistorial()">🗑️ Limpiar</button>
+          </div>
+        </div>
+
+        <!-- GRÁFICO DINÁMICO DE CRECIMIENTO DEL BANKROLL -->
+        <div style="background: rgba(8, 14, 26, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0.85rem; padding: 1rem; margin-bottom: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.4rem;">
+            <div style="font-weight: 800; color: #38bdf8; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
+              <span>📈</span> Curva de Crecimiento del Bankroll
+            </div>
+            <div style="font-size: 0.74rem; color: #94a3b8;" id="txtPicoBankroll">Pico Máximo: $ 100.000 COP</div>
+          </div>
+          <div id="contenedorGraficoBankroll" style="width: 100%; min-height: 180px; position: relative;">
+            <!-- SVG dinámico generado por renderGraficoBankroll() -->
           </div>
         </div>
 
@@ -1146,6 +1223,10 @@
         costoPerdida: costoPerdida,
         pasos: pasosSeleccionados
       };
+      if (document.getElementById('inputHedgePremio')) {
+        document.getElementById('inputHedgePremio').value = currentCalculatedStake.retornoBruto || 129370;
+        calcularHedgingEnVivo();
+      }
     }
 
     // --- GESTIÓN DE APUESTAS ACTIVAS (EN JUEGO) ---
@@ -1631,6 +1712,8 @@
 
       actualizarBotonesStake();
       actualizarEscudoAntiquiebra();
+      actualizarMetricasStats();
+      renderGraficoBankroll();
     }
 
     // --- ATAJOS DE STAKE DISCIPLINADO ---
@@ -1831,6 +1914,267 @@
       }
     }
 
+    // --- CALCULADORA DE COBERTURA / HEDGING (ASEGURAR GANANCIA EN ÚLTIMO PARTIDO) ---
+    function calcularHedgingEnVivo() {
+      const elPremio = document.getElementById('inputHedgePremio');
+      const elCuota = document.getElementById('inputHedgeCuota');
+      const elModo = document.getElementById('selectHedgeModo');
+      const boxResultado = document.getElementById('boxResultadoHedging');
+
+      if (!elPremio || !elCuota || !boxResultado) return;
+
+      let premioCombinada = parseFloat(elPremio.value);
+      if (isNaN(premioCombinada) || premioCombinada <= 0) {
+        premioCombinada = currentCalculatedStake.retornoBruto || 129370;
+        elPremio.value = Math.round(premioCombinada);
+      }
+
+      const cuotaContra = parseFloat(elCuota.value) || 2.10;
+      const modo = elModo.value;
+      const inversionOriginal = currentCalculatedStake.montoApostar || 1000;
+
+      if (cuotaContra <= 1.01) {
+        boxResultado.innerHTML = '⚠️ La cuota opuesta debe ser mayor a 1.01 para calcular la cobertura.';
+        return;
+      }
+
+      let stakeContra = 0;
+      let gananciaGarantizada = 0;
+      let html = '';
+
+      if (modo === 'equilibrada') {
+        // Misma ganancia gane la combinada o gane la contra
+        stakeContra = Math.round(premioCombinada / cuotaContra);
+        gananciaGarantizada = Math.round(premioCombinada - stakeContra - inversionOriginal);
+        const roi = inversionOriginal > 0 ? ((gananciaGarantizada / (inversionOriginal + stakeContra)) * 100) : 0;
+
+        html = `
+          <div style="font-weight: 800; color: #34d399; margin-bottom: 0.35rem; font-size: 0.9rem;">
+            🎯 COBERTURA 100% EQUILIBRADA (GANANCIA GARANTIZADA):
+          </div>
+          <div style="line-height: 1.5;">
+            👉 <strong>Apuesta en la contra (@ ${cuotaContra.toFixed(2)}):</strong> <strong style="color: #fff; font-family: 'JetBrains Mono', monospace; font-size: 0.95rem;">${formatCOP(stakeContra)}</strong><br>
+            💰 <strong>Beneficio Limpio Asegurado:</strong> <strong style="color: #34d399; font-size: 1rem;">+${formatCOP(gananciaGarantizada)}</strong> (+${roi.toFixed(1)}% ROI total).<br>
+            <div style="margin-top: 0.35rem; padding: 0.4rem 0.55rem; background: rgba(16, 185, 129, 0.15); border-radius: 0.4rem; font-size: 0.76rem; color: #a7f3d0;">
+              ✨ <strong>Pase lo que pase:</strong> Si gana tu combinada cobras ${formatCOP(premioCombinada)} y te quedan netos ${formatCOP(gananciaGarantizada)}. Si gana el rival/contra cobras ${formatCOP(stakeContra * cuotaContra)} y te quedan exactamente los mismos ${formatCOP(gananciaGarantizada)}. <strong>¡Riesgo Cero Absoluto!</strong>
+            </div>
+          </div>
+        `;
+      } else {
+        // Riesgo Cero (Free Roll): Solo cubrir la inversión
+        stakeContra = Math.round(inversionOriginal / (cuotaContra - 1));
+        const gananciaSiCombinada = Math.round(premioCombinada - stakeContra - inversionOriginal);
+
+        html = `
+          <div style="font-weight: 800; color: #38bdf8; margin-bottom: 0.35rem; font-size: 0.9rem;">
+            🛡️ COBERTURA RIESGO CERO (FREE ROLL):
+          </div>
+          <div style="line-height: 1.5;">
+            👉 <strong>Solo debes apostar en la contra:</strong> <strong style="color: #fff; font-family: 'JetBrains Mono', monospace;">${formatCOP(stakeContra)}</strong><br>
+            • Si gana tu Combinada: cobras <strong style="color: #34d399;">+${formatCOP(gananciaSiCombinada)}</strong> de ganancia neta máxima.<br>
+            • Si gana la Contra: recuperas tus ${formatCOP(inversionOriginal)} apostados en la combinada (<strong>$0 pérdida en tu caja</strong>).
+          </div>
+        `;
+      }
+
+      boxResultado.innerHTML = html;
+    }
+
+    // --- MÉTRICAS Y ESTADÍSTICAS DEL APOSTADOR (WIN RATE, YIELD, RACHA) ---
+    function actualizarMetricasStats() {
+      let ganadas = 0;
+      let perdidas = 0;
+      let anuladas = 0;
+      let totalInvertido = 0;
+      let beneficioNeto = 0;
+
+      movimientos.forEach(m => {
+        totalInvertido += (m.invertido || 0);
+        beneficioNeto += (m.neto || 0);
+
+        if (m.categoria === 'ganada') ganadas++;
+        else if (m.categoria === 'perdida') perdidas++;
+        else if (m.categoria === 'anulada') anuladas++;
+      });
+
+      const totalDecididas = ganadas + perdidas;
+      const winRate = totalDecididas > 0 ? ((ganadas / totalDecididas) * 100) : 0;
+      const yieldRoi = totalInvertido > 0 ? ((beneficioNeto / totalInvertido) * 100) : 0;
+
+      // Calcular Racha (Streak) desde el último movimiento
+      let rachaTipo = '';
+      let rachaConteo = 0;
+
+      for (let i = 0; i < movimientos.length; i++) {
+        const cat = movimientos[i].categoria;
+        if (cat === 'anulada') continue;
+
+        if (!rachaTipo) {
+          rachaTipo = cat;
+          rachaConteo = 1;
+        } else if (rachaTipo === cat) {
+          rachaConteo++;
+        } else {
+          break;
+        }
+      }
+
+      const elWinRate = document.getElementById('statWinRate');
+      const elAciertos = document.getElementById('statAciertosDetalle');
+      const elYield = document.getElementById('statYield');
+      const elYieldSub = document.getElementById('statYieldSub');
+      const elRacha = document.getElementById('statRacha');
+      const elRachaAviso = document.getElementById('statRachaAviso');
+      const elTotalInvertido = document.getElementById('statTotalInvertido');
+      const elTotalApuestas = document.getElementById('statTotalApuestas');
+
+      if (elWinRate) elWinRate.innerText = `${winRate.toFixed(1)}%`;
+      if (elAciertos) elAciertos.innerText = `${ganadas}G / ${perdidas}P (${totalDecididas} decididas)`;
+
+      if (elYield) {
+        elYield.innerText = `${yieldRoi >= 0 ? '+' : ''}${yieldRoi.toFixed(1)}%`;
+        elYield.style.color = yieldRoi >= 0 ? '#38bdf8' : '#f87171';
+      }
+      if (elYieldSub) {
+        elYieldSub.innerText = totalInvertido > 0 ? `Neto: ${formatCOP(beneficioNeto)}` : 'Por cada $100 apostados';
+      }
+
+      if (elRacha) {
+        if (!rachaTipo || rachaConteo === 0) {
+          elRacha.innerText = '⚖️ Sin racha';
+          elRacha.style.color = '#fbbf24';
+          if (elRachaAviso) elRachaAviso.innerHTML = 'Sin apuestas registradas';
+        } else if (rachaTipo === 'ganada') {
+          elRacha.innerText = `🔥 ${rachaConteo} Ganada${rachaConteo > 1 ? 's' : ''} seguidas`;
+          elRacha.style.color = '#34d399';
+          if (elRachaAviso) elRachaAviso.innerHTML = '<span style="color: #34d399;">¡Excelente racha! Mantén el stake disciplinado.</span>';
+        } else {
+          elRacha.innerText = `❄️ ${rachaConteo} Pérdida${rachaConteo > 1 ? 's' : ''} seguidas`;
+          elRacha.style.color = '#f87171';
+          if (elRachaAviso) {
+            if (rachaConteo >= 3) {
+              elRachaAviso.innerHTML = '<strong style="color: #ef4444; background: rgba(239,68,68,0.2); padding: 0.15rem 0.4rem; border-radius: 0.3rem;">⚠️ ¡Pausa recomendada! 3 pérdidas seguidas. Enfría la mente.</strong>';
+            } else {
+              elRachaAviso.innerHTML = '<span style="color: #fca5a5;">Aplica rescate sin subir el stake compulsivamente.</span>';
+            }
+          }
+        }
+      }
+
+      if (elTotalInvertido) elTotalInvertido.innerText = formatCOP(totalInvertido);
+      if (elTotalApuestas) elTotalApuestas.innerText = `${movimientos.length} jugadas en historial`;
+    }
+
+    // --- GRÁFICO DINÁMICO DE CRECIMIENTO DEL BANKROLL (SVG PURO) ---
+    function renderGraficoBankroll() {
+      const contenedor = document.getElementById('contenedorGraficoBankroll');
+      const elPico = document.getElementById('txtPicoBankroll');
+      if (!contenedor) return;
+
+      if (movimientos.length === 0) {
+        if (elPico) elPico.innerText = `Pico Máximo: ${formatCOP(bankrollTotal)}`;
+        contenedor.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 160px; color: #64748b; font-size: 0.85rem; border: 1px dashed rgba(255,255,255,0.08); border-radius: 0.65rem;">
+            <div style="font-size: 1.8rem; margin-bottom: 0.35rem;">📊</div>
+            <div>Aún no hay apuestas resueltas para trazar la curva.</div>
+            <div style="font-size: 0.72rem; color: #475569; margin-top: 0.2rem;">Tu capital inicial de partida es <strong>${formatCOP(bankrollTotal)}</strong>.</div>
+          </div>
+        `;
+        return;
+      }
+
+      const movsChronological = [...movimientos].reverse();
+      let acumulado = bankrollTotal;
+      movsChronological.forEach(m => acumulado -= (m.neto || 0));
+      let balanceInicial = acumulado;
+
+      const puntos = [{ label: 'Inicio', balance: balanceInicial }];
+      let balanceRunning = balanceInicial;
+      let picoMaximo = balanceInicial;
+
+      movsChronological.forEach((m, idx) => {
+        balanceRunning += (m.neto || 0);
+        if (balanceRunning > picoMaximo) picoMaximo = balanceRunning;
+        puntos.push({
+          label: `#${idx + 1}`,
+          balance: balanceRunning,
+          neto: m.neto,
+          tipo: m.tipo
+        });
+      });
+
+      if (elPico) elPico.innerText = `Pico Máximo: ${formatCOP(picoMaximo)}`;
+
+      const balances = puntos.map(p => p.balance);
+      let minB = Math.min(...balances);
+      let maxB = Math.max(...balances);
+      if (minB === maxB) {
+        minB *= 0.95;
+        maxB *= 1.05;
+      } else {
+        const diff = maxB - minB;
+        minB -= diff * 0.12;
+        maxB += diff * 0.12;
+      }
+
+      const W = 620;
+      const H = 170;
+      const padL = 60;
+      const padR = 25;
+      const padT = 20;
+      const padB = 30;
+
+      const getX = (idx) => padL + (idx / (puntos.length - 1 || 1)) * (W - padL - padR);
+      const getY = (val) => padT + (1 - (val - minB) / (maxB - minB || 1)) * (H - padT - padB);
+
+      const coords = puntos.map((p, idx) => ({ x: getX(idx), y: getY(p.balance), ...p }));
+      const pathD = coords.reduce((acc, c, idx) => idx === 0 ? `M ${c.x} ${c.y}` : `${acc} L ${c.x} ${c.y}`, '');
+      const areaD = `${pathD} L ${coords[coords.length - 1].x} ${H - padB} L ${coords[0].x} ${H - padB} Z`;
+
+      const strokeColor = balanceRunning >= balanceInicial ? '#10b981' : '#38bdf8';
+      const gradStop = balanceRunning >= balanceInicial ? 'rgba(16, 185, 129, 0.4)' : 'rgba(56, 189, 248, 0.4)';
+
+      let svgHtml = `
+        <svg viewBox="0 0 ${W} ${H}" style="width: 100%; height: 100%; overflow: visible;" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="bankGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${gradStop}" />
+              <stop offset="100%" stop-color="rgba(11, 16, 29, 0.0)" />
+            </linearGradient>
+          </defs>
+
+          <!-- Líneas de cuadrícula horizontal -->
+          <line x1="${padL}" y1="${getY(maxB * 0.95)}" x2="${W - padR}" y2="${getY(maxB * 0.95)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" />
+          <line x1="${padL}" y1="${getY(balanceInicial)}" x2="${W - padR}" y2="${getY(balanceInicial)}" stroke="rgba(245, 158, 11, 0.25)" stroke-dasharray="4,4" />
+          <line x1="${padL}" y1="${getY(minB * 1.05)}" x2="${W - padR}" y2="${getY(minB * 1.05)}" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" />
+
+          <!-- Texto de eje Y -->
+          <text x="${padL - 6}" y="${getY(maxB * 0.95) + 3}" fill="#94a3b8" font-size="9" text-anchor="end" font-family="JetBrains Mono">$${Math.round(maxB * 0.95).toLocaleString('es-CO')}</text>
+          <text x="${padL - 6}" y="${getY(balanceInicial) + 3}" fill="#fbbf24" font-size="9" text-anchor="end" font-family="JetBrains Mono">Base</text>
+          <text x="${padL - 6}" y="${getY(minB * 1.05) + 3}" fill="#94a3b8" font-size="9" text-anchor="end" font-family="JetBrains Mono">$${Math.round(minB * 1.05).toLocaleString('es-CO')}</text>
+
+          <!-- Área degradada -->
+          <path d="${areaD}" fill="url(#bankGrad)" />
+
+          <!-- Línea de tendencia -->
+          <path d="${pathD}" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+
+          <!-- Puntos -->
+          ${coords.map((c, i) => `
+            <circle cx="${c.x}" cy="${c.y}" r="${i === coords.length - 1 ? 5 : 3.5}" fill="${c.balance >= balanceInicial ? '#10b981' : '#38bdf8'}" stroke="#060911" stroke-width="2" />
+          `).join('')}
+
+          <!-- Marcador actual flotante -->
+          <g transform="translate(${coords[coords.length - 1].x - 30}, ${coords[coords.length - 1].y - 20})">
+            <rect width="60" height="18" rx="4" fill="rgba(15, 23, 42, 0.9)" stroke="${strokeColor}" stroke-width="1" />
+            <text x="30" y="12" fill="#fff" font-size="9" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">$${Math.round(balanceRunning).toLocaleString('es-CO')}</text>
+          </g>
+        </svg>
+      `;
+
+      contenedor.innerHTML = svgHtml;
+    }
+
     function ajustarBankrollModal() {
       const nuevo = prompt('Ingresa tu Bankroll actual ($ COP):', Math.round(bankrollTotal));
       if (nuevo !== null) {
@@ -1969,6 +2313,7 @@
     }
     calcularEnVivo();
     evaluarCashoutEnVivo();
+    calcularHedgingEnVivo();
   </script>
 </body>
 </html>

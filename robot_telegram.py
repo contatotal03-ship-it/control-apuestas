@@ -34,9 +34,14 @@ def init_db():
     CREATE TABLE IF NOT EXISTS user_config (
         user_id INTEGER PRIMARY KEY,
         bankroll REAL DEFAULT 1000000,
-        stake_pct REAL DEFAULT 1.0
+        stake_pct REAL DEFAULT 1.0,
+        deuda REAL DEFAULT 0
     )
     """)
+    try:
+        cursor.execute("ALTER TABLE user_config ADD COLUMN deuda REAL DEFAULT 0")
+    except Exception:
+        pass
     conn.commit()
     conn.close()
 
@@ -46,7 +51,7 @@ def get_user_bankroll(user_id):
     cursor.execute("SELECT bankroll FROM user_config WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     conn.close()
-    if row and row[0]:
+    if row and row[0] is not None:
         return float(row[0])
     return 1000000.0  # Default: 1.000.000 COP
 
@@ -54,12 +59,36 @@ def set_user_bankroll(user_id, bankroll):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
-    INSERT INTO user_config (user_id, bankroll, stake_pct)
-    VALUES (?, ?, 1.0)
+    INSERT INTO user_config (user_id, bankroll, stake_pct, deuda)
+    VALUES (?, ?, 1.0, 0)
     ON CONFLICT(user_id) DO UPDATE SET bankroll = excluded.bankroll
     """, (user_id, bankroll))
     conn.commit()
     conn.close()
+
+def get_user_debt(user_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT deuda FROM user_config WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row and row[0] is not None:
+        return float(row[0])
+    return 0.0
+
+def update_user_balance_and_debt(user_id, delta_bank, delta_debt):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    current_bank = get_user_bankroll(user_id) + delta_bank
+    current_debt = max(0.0, get_user_debt(user_id) + delta_debt)
+    cursor.execute("""
+    INSERT INTO user_config (user_id, bankroll, stake_pct, deuda)
+    VALUES (?, ?, 1.0, ?)
+    ON CONFLICT(user_id) DO UPDATE SET bankroll = excluded.bankroll, deuda = excluded.deuda
+    """, (user_id, current_bank, current_debt))
+    conn.commit()
+    conn.close()
+    return current_bank, current_debt
 
 # Llamadas a la API de Telegram con soporte para JSON
 def send_telegram_request(method, payload=None):
@@ -337,7 +366,21 @@ def handle_message(msg):
                 (user_id, fecha_hoy, "apuesta_ganada", concepto, monto, retorno, neto)
             )
             conn.commit()
-            send_message(chat_id, f"🟢 *¡Apuesta Ganada Registrada!*\n\n• Jugada: {concepto}\n• Apostado: $ {monto:,.0f} COP @ {cuota:.2f}\n• Cobro Total: $ {retorno:,.0f} COP\n• Ganancia Neta: *+ $ {neto:,.0f} COP* 🎯")
+
+            nuevo_bank, nueva_deuda = update_user_balance_and_debt(user_id, neto, -monto)
+            deuda_txt = f"• Pérdida pendiente restante: ${nueva_deuda:,.0f} COP" if nueva_deuda > 0 else "• ¡Caja libre de pérdidas acumuladas! 🚀"
+
+            msg_gana = (
+                "🟢 *¡Apuesta Ganada Registrada!*\n\n"
+                f"• Jugada: {concepto}\n"
+                f"• Apostado: $ {monto:,.0f} COP @ {cuota:.2f}\n"
+                f"• Cobro Total: $ {retorno:,.0f} COP\n"
+                f"• Ganancia Neta: *+ $ {neto:,.0f} COP* 🎯\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💰 *Nuevo Bankroll:* ${nuevo_bank:,.0f} COP\n"
+                f"{deuda_txt}"
+            ).replace(",", ".")
+            send_message(chat_id, msg_gana)
         except ValueError:
             send_message(chat_id, "⚠️ Error en números. Ejemplo: `/gana 20000 2.32 Partido`")
             
@@ -356,7 +399,23 @@ def handle_message(msg):
                 (user_id, fecha_hoy, "apuesta_perdida", concepto, monto, 0, neto)
             )
             conn.commit()
-            send_message(chat_id, f"🔴 *Apuesta Perdida Registrada*\n\n• Jugada: {concepto}\n• Pérdida: - $ {monto:,.0f} COP\n\n💡 _Para calcular la recuperación de esta pérdida escribe:_\n`/recuperar {int(monto)} 1.80`")
+
+            nuevo_bank, nueva_deuda = update_user_balance_and_debt(user_id, -monto, monto)
+            cuota_sug = 1.80
+            apuesta_rescate = nueva_deuda / (cuota_sug - 1.0)
+
+            msg_pierde = (
+                "🔴 *Apuesta Perdida Registrada*\n\n"
+                f"• Jugada: {concepto}\n"
+                f"• Pérdida: - $ {monto:,.0f} COP\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💰 *Bankroll Restante:* ${nuevo_bank:,.0f} COP\n"
+                f"🚨 *Total por Recuperar:* ${nueva_deuda:,.0f} COP\n\n"
+                f"💡 *Para recuperar con tu próxima cuota (ej: @ 1.80):*\n"
+                f"👉 Debes apostar: *${apuesta_rescate:,.0f} COP*\n"
+                f"_(O divide en 2 pasos de ${apuesta_rescate/2:,.0f} COP para cuidar la caja)_"
+            ).replace(",", ".")
+            send_message(chat_id, msg_pierde)
         except ValueError:
             send_message(chat_id, "⚠️ Error en monto. Ejemplo: `/pierde 15000 Partido`")
 
@@ -383,11 +442,29 @@ def handle_message(msg):
             )
             conn.commit()
 
+            delta_bank = neto if es_ganada else -monto
+            delta_debt = -monto if es_ganada else monto
+            nuevo_bank, nueva_deuda = update_user_balance_and_debt(user_id, delta_bank, delta_debt)
+
             icono = "🟢" if es_ganada else "🔴"
             txt_res = "GANADA" if es_ganada else "PERDIDA"
-            txt_extra = f"• Cobro: ${retorno:,.0f} COP\n• Beneficio Neto: *+${neto:,.0f} COP*" if es_ganada else f"• Pérdida: *-${monto:,.0f} COP*\n\n💡 _Para recuperar escribe:_ `/recuperar {int(monto)} 1.80`"
 
-            send_message(chat_id, f"{icono} *Apuesta de Betano Registrada ({txt_res})*\n\n• Partido: {concepto}\n• Apostado: ${monto:,.0f} COP @ {cuota:.2f}\n{txt_extra}")
+            if es_ganada:
+                det = f"• Cobro: ${retorno:,.0f} COP\n• Ganancia Neta: *+${neto:,.0f} COP*"
+            else:
+                sug_rescate = nueva_deuda / (cuota - 1.0) if cuota > 1.0 else nueva_deuda
+                det = f"• Pérdida: *-${monto:,.0f} COP*\n\n💡 _Para recuperar escribe:_ `/recuperar {int(nueva_deuda)} {cuota:.2f}`"
+
+            msg_b = (
+                f"{icono} *Apuesta de Betano Registrada ({txt_res})*\n\n"
+                f"• Partido: {concepto}\n"
+                f"• Apostado: ${monto:,.0f} COP @ {cuota:.2f}\n"
+                f"{det}\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💰 *Bankroll Actual:* ${nuevo_bank:,.0f} COP\n"
+                f"📊 *Déficit Pendiente:* ${nueva_deuda:,.0f} COP"
+            ).replace(",", ".")
+            send_message(chat_id, msg_b)
         except Exception as e:
             send_message(chat_id, "⚠️ Error en formato. Ejemplo: `/betano 80000 1.85 g Real Madrid`")
             

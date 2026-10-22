@@ -432,7 +432,7 @@
         </div>
 
         <div style="display: flex; gap: 0.6rem; flex-wrap: wrap;">
-          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/W5WMGTME/" value="https://www.betano.co/bookingcode/W5WMGTME/">
+          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/ATY8SP4H/" value="https://www.betano.co/bookingcode/ATY8SP4H/">
           <button class="btn btn-betano" style="width: auto; min-width: 180px; padding: 0.85rem 1.4rem;" onclick="analizarLinkBetano()">
             <span>⚡</span> Cargar y Analizar Jugada
           </button>
@@ -860,6 +860,15 @@
 
     // --- BASE DE DATOS DE TICKETS Y ANALIZADOR DINÁMICO DE BETANO ---
     const BETANO_DATABASE = {
+      'ATY8SP4H': {
+        code: 'ATY8SP4H',
+        tipo: 'Simple',
+        cuota: 1.44,
+        partidos: [
+          { evento: '⚽ Besiktas JK vs Crystal Palace FC', pick: 'Ambos equipos anotan: Sí', mercado: 'Ambos equipos anotarán (1X2)', odds: 1.44, color: '#38bdf8' }
+        ],
+        cashoutNote: 'Apenas ambos equipos marquen su primer gol, la apuesta está GANADA al 100%. No necesitas Cash Out una vez se cumpla.'
+      },
       'W5WMGTME': {
         code: 'W5WMGTME',
         tipo: 'Combinada de 7 (con BetBuilders)',
@@ -940,19 +949,18 @@
 
       let boleto = BETANO_DATABASE[code];
 
-      // Si no está en base de datos predefinida, crear boleto dinámico con opción a editar
+      // Si no está en base de datos predefinida, crear boleto dinámico sin interrumpir con prompt
       if (!boleto) {
         let cuotaActual = (typeof paramCode !== 'undefined' && paramCode === code && typeof paramCuota !== 'undefined' && paramCuota) ? parseFloat(paramCuota) : 0;
         if (!cuotaActual || isNaN(cuotaActual)) {
-          let inputPrompt = prompt(`Boleto Betano #${code} detectado.\nIngresa la cuota total de este boleto en Betano:`, '2.00');
-          cuotaActual = parseFloat(inputPrompt) || parseFloat(document.getElementById('dynCuota').value) || 2.00;
+          cuotaActual = parseFloat(document.getElementById('dynCuota').value) || 1.80;
         }
         boleto = {
           code: code,
           tipo: `Boleto Betano #${code}`,
           cuota: cuotaActual,
           partidos: [
-            { evento: `⚽ Evento Betano (#${code})`, pick: 'Selección cargada', mercado: 'Boleto compartido', odds: cuotaActual, color: '#ff5e00' }
+            { evento: `⚽ Evento Betano (#${code})`, pick: 'Selección cargada desde link', mercado: 'Boleto compartido', odds: cuotaActual, color: '#ff5e00' }
           ],
           cashoutNote: 'Evalúa Cash Out en vivo si tu jugada va a favor antes de que termine el tiempo reglamentario.'
         };

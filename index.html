@@ -375,10 +375,13 @@
     <!-- TABS -->
     <div class="tabs-bar">
       <button class="tab-btn active" onclick="switchTab('apuesta')">
-        <span>⚡</span> Jugada & Decisión
+        <span>⚡</span> Analizar & Decidir
+      </button>
+      <button class="tab-btn" onclick="switchTab('activas')" id="tabBtnActivas">
+        <span>🎟️</span> En Juego (<span id="countActivasBadge">0</span>)
       </button>
       <button class="tab-btn" onclick="switchTab('ajustes')">
-        <span>🎯</span> Ajustar Caja & Déficit
+        <span>🎯</span> Ajustar Caja
       </button>
       <button class="tab-btn" onclick="switchTab('historial')">
         <span>📋</span> Historial
@@ -599,6 +602,20 @@
             <div id="dynRiskText">Calculando veredicto...</div>
           </div>
 
+          <!-- BOTÓN PRINCIPAL: GUARDAR EN ACTIVAS SI SE DECIDE APOSTAR -->
+          <div style="margin-top: 0.95rem; margin-bottom: 0.95rem;">
+            <button type="button" class="btn btn-betano" style="width: 100%; padding: 0.95rem 1rem; font-size: 0.95rem; font-weight: 800; border-radius: 0.75rem; box-shadow: 0 4px 18px rgba(255, 94, 0, 0.45); display: flex; align-items: center; justify-content: center; gap: 0.5rem;" onclick="guardarApuestaActiva()">
+              <span style="font-size: 1.15rem;">📌</span> ¡APOSTÉ ESTA JUGADA EN BETANO! (Guardar en Activas)
+            </button>
+            <div style="font-size: 0.73rem; color: #94a3b8; text-align: center; margin-top: 0.4rem; line-height: 1.35;">
+              Guarda este boleto en <strong>Apuestas en Juego</strong> para que puedas marcar si <strong>Ganó, Perdió, Anuló o si hiciste Cash Out</strong> cuando finalicen los partidos.
+            </div>
+          </div>
+
+          <div style="font-size: 0.72rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin-bottom: 0.45rem; letter-spacing: 0.06em; text-align: center;">
+            &mdash; O Resolver de Inmediato (1 Clic) &mdash;
+          </div>
+
           <!-- BOTONES DE RESOLUCIÓN CON 1 CLIC (GANADA / PERDIDA / ANULADA) -->
           <div class="action-buttons-grid">
             <button class="btn-action btn-action-win" onclick="resolverJugada('ganada')">
@@ -614,6 +631,40 @@
               <span class="action-sub">Devuelve $0 impacto</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN DE APUESTAS ACTIVAS (EN JUEGO) DENTRO DE TAB 1 -->
+      <div class="box" id="contenedorApuestasActivas" style="margin-top: 1.25rem; border-color: rgba(56, 189, 248, 0.4); background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(8, 14, 26, 0.98)); box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+        <div class="box-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.65rem; margin-bottom: 0.85rem;">
+          <div class="box-title" style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.2rem;">🎟️</span>
+            <span>Tus Boletos y Apuestas en Juego</span>
+            <span id="badgeCountActivas" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; font-size: 0.74rem; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 800;">0 en juego</span>
+          </div>
+          <span style="font-size: 0.74rem; color: #94a3b8;">Control de Resultados en Vivo</span>
+        </div>
+
+        <div id="listaApuestasActivas">
+          <!-- Rellenado dinámicamente por JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: APUESTAS EN JUEGO (PANTALLA COMPLETA) -->
+    <div id="tab-activas" class="tab-content">
+      <div class="box" style="border-color: rgba(56, 189, 248, 0.4); background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(8, 14, 26, 0.98));">
+        <div class="box-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.65rem; margin-bottom: 0.85rem;">
+          <div class="box-title" style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>🎟️</span>
+            <span>Seguimiento de Boletos Activos en Betano</span>
+          </div>
+          <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.76rem;" onclick="switchTab('apuesta')">
+            <span>⚡</span> Analizar Otra Jugada
+          </button>
+        </div>
+        <div id="listaApuestasActivasTab">
+          <!-- Rellenado dinámicamente por JS -->
         </div>
       </div>
     </div>
@@ -706,10 +757,11 @@
       window.Telegram.WebApp.expand();
     }
 
-    // ESTADO DINÁMICO EN VIVO
-    let bankrollTotal = parseFloat(localStorage.getItem('bankroll_total')) || 1000000;
+    let bankrollTotal = parseFloat(localStorage.getItem('bankroll_total')) || 100000;
     let deudaRecuperacion = parseFloat(localStorage.getItem('deuda_recuperacion')) || 0;
     let movimientos = JSON.parse(localStorage.getItem('movimientos_apuestas')) || [];
+    let apuestasActivas = JSON.parse(localStorage.getItem('apuestas_activas')) || [];
+    let currentCalculatedStake = { montoApostar: 2000, retornoBruto: 2900, beneficioLimpio: 900, cuota: 1.45 };
     let casoActual = 'rescate'; // 'rescate' | 'normal' | 'freebet'
     let pasosSeleccionados = 1;
 
@@ -1084,6 +1136,293 @@
         badgeSemaforo.innerText = '⚠️ ¡Peligro de Quiebra!';
         riskText.innerHTML = `<strong>¡CUIDADO! Consume el ${pctBank.toFixed(1)}% de tu capital:</strong> No arriesgues tanto dinero de golpe; divide en 2 pasos o usa una cuota mayor.`;
       }
+
+      currentCalculatedStake = {
+        montoApostar: Math.round(montoApostar),
+        retornoBruto: Math.round(retornoBruto),
+        beneficioLimpio: Math.round(beneficioLimpio),
+        cuota: cuota,
+        caso: casoActual,
+        costoPerdida: costoPerdida,
+        pasos: pasosSeleccionados
+      };
+    }
+
+    // --- GESTIÓN DE APUESTAS ACTIVAS (EN JUEGO) ---
+    function guardarApuestaActiva() {
+      const cuota = parseFloat(document.getElementById('dynCuota').value) || 1.80;
+      const linkRaw = document.getElementById('betanoLinkInput').value.trim();
+      const codeMatch = linkRaw.match(/bookingcode\/([a-zA-Z0-9]+)/i) || linkRaw.match(/([a-zA-Z0-9]{6,12})/);
+      const code = codeMatch ? codeMatch[1].toUpperCase() : 'BETANO';
+      const boletoInfo = BETANO_DATABASE[code] || null;
+      const titulo = document.getElementById('betanoBoletoTitulo').innerText || `Boleto Betano #${code}`;
+
+      let montoApostar = currentCalculatedStake.montoApostar;
+      if (!montoApostar || montoApostar <= 0) {
+        montoApostar = Math.round(bankrollTotal * 0.02);
+      }
+
+      let retornoPotencial = casoActual === 'freebet' ? Math.round(montoApostar * (cuota - 1)) : Math.round(montoApostar * cuota);
+      let beneficioLimpio = casoActual === 'freebet' ? retornoPotencial : Math.round(retornoPotencial - montoApostar);
+
+      const nuevaApuesta = {
+        id: Date.now(),
+        code: code,
+        titulo: titulo,
+        cuota: cuota,
+        montoApostar: montoApostar,
+        retornoPotencial: retornoPotencial,
+        beneficioLimpio: beneficioLimpio,
+        caso: casoActual,
+        costoPerdida: parseFloat(document.getElementById('dynPerdida').value) || 0,
+        pasos: pasosSeleccionados,
+        partidos: (boletoInfo && boletoInfo.partidos) ? boletoInfo.partidos : [
+          { evento: `⚽ Evento Betano #${code}`, pick: 'Selección en juego', mercado: 'Boleto compartido', odds: cuota, color: '#ff5e00' }
+        ],
+        fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      apuestasActivas.unshift(nuevaApuesta);
+      guardarEstado();
+
+      alert(`🎯 ¡Apuesta Registrada en Juego!\n\nBoleto #${code} guardado por ${formatCOP(montoApostar)} (@ ${cuota.toFixed(2)}).\nPuedes seguirla y marcar si Ganó, Perdió, Anuló o si hiciste Cash Out en la sección "Tus Boletos y Apuestas en Juego".`);
+
+      const elActivas = document.getElementById('contenedorApuestasActivas');
+      if (elActivas) elActivas.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderApuestasActivas() {
+      const badgeNav = document.getElementById('countActivasBadge');
+      const badgeBox = document.getElementById('badgeCountActivas');
+      const total = apuestasActivas.length;
+
+      if (badgeNav) badgeNav.innerText = total;
+      if (badgeBox) badgeBox.innerText = `${total} en juego`;
+
+      const contenedores = [
+        document.getElementById('listaApuestasActivas'),
+        document.getElementById('listaApuestasActivasTab')
+      ];
+
+      contenedores.forEach(contenedor => {
+        if (!contenedor) return;
+
+        if (total === 0) {
+          contenedor.innerHTML = `
+            <div style="text-align: center; padding: 2rem 1rem; color: #64748b; background: rgba(0,0,0,0.25); border-radius: 0.75rem; border: 1px dashed rgba(255,255,255,0.1);">
+              <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🎯</div>
+              <div style="font-weight: 700; color: #cbd5e1; font-size: 0.95rem;">No tienes apuestas en juego en este momento</div>
+              <div style="font-size: 0.8rem; margin-top: 0.35rem; color: #94a3b8; max-width: 520px; margin-left: auto; margin-right: auto; line-height: 1.45;">
+                Pega un enlace de Betano arriba para analizar la cuota y los partidos. Cuando decidas jugarlo en Betano, presiona <strong>"¡APOSTÉ ESTA JUGADA EN BETANO!"</strong> para registrarlo aquí y poder marcar si <strong>Ganó, Perdió, Anuló o si hiciste Cash Out</strong>.
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        contenedor.innerHTML = apuestasActivas.map(ap => `
+          <div class="active-bet-card" style="background: rgba(11, 16, 29, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0.85rem; padding: 1rem; margin-bottom: 0.85rem; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
+            <!-- Encabezado de la tarjeta -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.65rem;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <span style="background: #ff5e00; color: #fff; font-weight: 800; font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 0.3rem;">BETANO</span>
+                  <strong style="font-size: 0.95rem; color: #f8fafc;">${ap.titulo}</strong>
+                  <span style="font-size: 0.7rem; color: #64748b; font-family: monospace;">#${ap.code}</span>
+                </div>
+                <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.2rem;">
+                  🕒 ${ap.fecha} &bull; Modo: <span style="color: #38bdf8; font-weight: 700;">${ap.caso.toUpperCase()}</span>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.35rem; font-weight: 900; color: #ff5e00;">@ ${ap.cuota.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <!-- Chips Financieros -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div style="background: rgba(0,0,0,0.3); border-radius: 0.5rem; padding: 0.5rem; text-align: center;">
+                <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">Apostado</div>
+                <div style="font-size: 0.92rem; font-weight: 800; color: #fff; font-family: 'JetBrains Mono', monospace;">${formatCOP(ap.montoApostar)}</div>
+              </div>
+              <div style="background: rgba(16, 185, 129, 0.1); border-radius: 0.5rem; padding: 0.5rem; text-align: center; border: 1px solid rgba(16, 185, 129, 0.25);">
+                <div style="font-size: 0.68rem; color: #34d399; text-transform: uppercase;">Posible Cobro</div>
+                <div style="font-size: 0.92rem; font-weight: 800; color: #34d399; font-family: 'JetBrains Mono', monospace;">${formatCOP(ap.retornoPotencial)}</div>
+              </div>
+              <div style="background: rgba(56, 189, 248, 0.1); border-radius: 0.5rem; padding: 0.5rem; text-align: center; border: 1px solid rgba(56, 189, 248, 0.25);">
+                <div style="font-size: 0.68rem; color: #38bdf8; text-transform: uppercase;">Beneficio Limpio</div>
+                <div style="font-size: 0.92rem; font-weight: 800; color: #38bdf8; font-family: 'JetBrains Mono', monospace;">+${formatCOP(ap.beneficioLimpio)}</div>
+              </div>
+            </div>
+
+            <!-- Lista de partidos resumida -->
+            <div style="background: rgba(0,0,0,0.25); border-radius: 0.5rem; padding: 0.55rem 0.75rem; margin-bottom: 0.85rem; font-size: 0.76rem; max-height: 130px; overflow-y: auto;">
+              ${(ap.partidos || []).map(p => `
+                <div style="display: flex; justify-content: space-between; padding: 0.2rem 0; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                  <span>${p.evento}</span>
+                  <span style="color: ${p.color || '#ff5e00'}; font-family: monospace; font-weight: 700;">@ ${Number(p.odds).toFixed(2)}</span>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- 5 BOTONES DE RESOLUCIÓN PARA ESTA APUESTA ACTIVA -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.45rem;">
+              <button type="button" class="btn" style="background: #10b981; color: #fff; font-weight: 800; font-size: 0.78rem; padding: 0.6rem 0.4rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;" onclick="resolverApuestaActiva(${ap.id}, 'ganada')">
+                <span>✅</span> ¡GANÓ!
+              </button>
+              <button type="button" class="btn" style="background: #ef4444; color: #fff; font-weight: 800; font-size: 0.78rem; padding: 0.6rem 0.4rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;" onclick="resolverApuestaActiva(${ap.id}, 'perdida')">
+                <span>❌</span> ¡PERDIÓ!
+              </button>
+              <button type="button" class="btn" style="background: #f59e0b; color: #000; font-weight: 800; font-size: 0.78rem; padding: 0.6rem 0.4rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;" onclick="resolverApuestaActiva(${ap.id}, 'cashout')">
+                <span>💵</span> Cash Out
+              </button>
+              <button type="button" class="btn btn-outline" style="font-weight: 700; font-size: 0.78rem; padding: 0.6rem 0.4rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;" onclick="resolverApuestaActiva(${ap.id}, 'anulada')">
+                <span>⚪</span> Anulada
+              </button>
+              <button type="button" class="btn btn-outline" style="border-color: rgba(239,68,68,0.4); color: #fca5a5; font-size: 0.75rem; padding: 0.6rem 0.4rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.3rem;" onclick="resolverApuestaActiva(${ap.id}, 'eliminar')">
+                <span>🗑️</span> Descartar
+              </button>
+            </div>
+          </div>
+        `).join('');
+      });
+    }
+
+    function resolverApuestaActiva(id, accion) {
+      const index = apuestasActivas.findIndex(a => a.id === id);
+      if (index === -1) return;
+      const ap = apuestasActivas[index];
+
+      if (accion === 'eliminar') {
+        if (confirm(`¿Deseas descartar este boleto (#${ap.code}) de tus apuestas en juego sin alterar tu saldo?`)) {
+          apuestasActivas.splice(index, 1);
+          guardarEstado();
+        }
+        return;
+      }
+
+      if (accion === 'anulada') {
+        movimientos.unshift({
+          id: Date.now(),
+          fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          tipo: 'Apuesta Anulada (Push)',
+          categoria: 'anulada',
+          concepto: `${ap.titulo} (Reembolso Betano)`,
+          cuota: ap.cuota,
+          invertido: ap.montoApostar,
+          retorno: ap.montoApostar,
+          neto: 0
+        });
+        apuestasActivas.splice(index, 1);
+        alert(`⚪ Boleto #${ap.code} marcado como ANULADO.\nTu dinero volvió a la caja con $0 impacto.`);
+        guardarEstado();
+        return;
+      }
+
+      if (accion === 'cashout') {
+        const promptCash = prompt(`💵 Cierre Anticipado / Cash Out (#${ap.code}):\n\n¿Cuánto dinero te pagó Betano al cerrar este boleto? (Ingresa en COP, ej: 32000):`, Math.round(ap.montoApostar * 1.5));
+        if (promptCash === null) return;
+        const cobroReal = parseFloat(promptCash) || 0;
+        if (cobroReal <= 0) return alert('Monto inválido.');
+
+        const neto = cobroReal - ap.montoApostar;
+        bankrollTotal += neto;
+
+        if (ap.caso === 'rescate' && ap.costoPerdida > 0) {
+          if (neto > 0) {
+            deudaRecuperacion = Math.max(0, deudaRecuperacion - neto);
+          }
+        }
+
+        movimientos.unshift({
+          id: Date.now(),
+          fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          tipo: 'Cash Out Betano',
+          categoria: neto >= 0 ? 'ganada' : 'perdida',
+          concepto: `${ap.titulo} (Cash Out anticipado)`,
+          cuota: ap.cuota,
+          invertido: ap.montoApostar,
+          retorno: cobroReal,
+          neto: neto
+        });
+
+        apuestasActivas.splice(index, 1);
+        alert(`💵 ¡Cash Out Registrado!\nCobraste ${formatCOP(cobroReal)} (Beneficio neto: ${formatCOP(neto)}).\nTu nuevo Bankroll es ${formatCOP(bankrollTotal)}.`);
+        guardarEstado();
+        return;
+      }
+
+      if (accion === 'ganada') {
+        let retorno = ap.retornoPotencial;
+        let neto = ap.beneficioLimpio;
+
+        if (ap.caso === 'freebet') {
+          bankrollTotal += neto;
+        } else {
+          bankrollTotal += neto;
+          if (ap.caso === 'rescate' && ap.costoPerdida > 0) {
+            if (ap.pasos === 1) {
+              deudaRecuperacion = 0;
+            } else {
+              deudaRecuperacion = Math.max(0, deudaRecuperacion - (ap.costoPerdida / 2));
+            }
+          }
+        }
+
+        movimientos.unshift({
+          id: Date.now(),
+          fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          tipo: ap.caso === 'freebet' ? 'Freebet Ganada ($0)' : 'Apuesta Ganada',
+          categoria: ap.caso === 'freebet' ? 'freebet' : 'ganada',
+          concepto: ap.titulo,
+          cuota: ap.cuota,
+          invertido: ap.caso === 'freebet' ? 0 : ap.montoApostar,
+          retorno: retorno,
+          neto: neto
+        });
+
+        apuestasActivas.splice(index, 1);
+        alert(`🎉 ¡GANADA! Boleto #${ap.code} acertado.\nCobraste ${formatCOP(retorno)} (Ganancia neta: ${formatCOP(neto)}).\nTu Bankroll sube a ${formatCOP(bankrollTotal)}.`);
+        guardarEstado();
+        return;
+      }
+
+      if (accion === 'perdida') {
+        if (ap.caso === 'freebet') {
+          movimientos.unshift({
+            id: Date.now(),
+            fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+            tipo: 'Freebet Perdida ($0)',
+            categoria: 'anulada',
+            concepto: `${ap.titulo} (Bono Freebet fallado)`,
+            cuota: ap.cuota,
+            invertido: 0,
+            retorno: 0,
+            neto: 0
+          });
+          alert(`ℹ️ Freebet no acertada. Como fue bono $0, no perdiste dinero de tu caja.`);
+        } else {
+          bankrollTotal -= ap.montoApostar;
+          deudaRecuperacion += ap.montoApostar;
+
+          movimientos.unshift({
+            id: Date.now(),
+            fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+            tipo: 'Apuesta Perdida',
+            categoria: 'perdida',
+            concepto: ap.titulo,
+            cuota: ap.cuota,
+            invertido: ap.montoApostar,
+            retorno: 0,
+            neto: -ap.montoApostar
+          });
+
+          alert(`⚠️ Apuesta perdida (-${formatCOP(ap.montoApostar)}).\nTu nuevo saldo en caja es ${formatCOP(bankrollTotal)}.\nEl déficit total a recuperar en tu próxima jugada es ${formatCOP(deudaRecuperacion)}.`);
+        }
+
+        apuestasActivas.splice(index, 1);
+        guardarEstado();
+      }
     }
 
     // --- RESOLUCIÓN CON 1 CLIC (GANADA, PERDIDA, ANULADA) ---
@@ -1224,8 +1563,10 @@
       localStorage.setItem('bankroll_total', bankrollTotal);
       localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
       localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
+      localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
 
       renderDashboard();
+      renderApuestasActivas();
       const cuotaActual = parseFloat(document.getElementById('dynCuota').value) || 1.80;
       actualizarEstrategiaBetano(cuotaActual);
       calcularEnVivo();
@@ -1617,9 +1958,10 @@
     }
 
     // Inicializar
-    document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion || 80000);
+    document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion || 0);
     document.getElementById('inputAjustarBank').value = bankrollTotal;
     renderDashboard();
+    renderApuestasActivas();
     analizarLinkBetano();
     if (paramCuota) {
       document.getElementById('dynCuota').value = parseFloat(paramCuota).toFixed(2);

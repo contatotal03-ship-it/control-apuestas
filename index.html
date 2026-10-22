@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Bankroll Master PRO - Control Dinámico en Vivo & Recuperación</title>
+  <title>Bankroll Master PRO - Control Dinámico & Todos los Casos de Apuesta</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -22,6 +22,8 @@
       --blue-glow: rgba(2, 132, 199, 0.3);
       --gold: #f59e0b;
       --gold-glow: rgba(245, 158, 11, 0.3);
+      --purple: #8b5cf6;
+      --purple-glow: rgba(139, 92, 246, 0.3);
       --betano: #ff5e00;
       --betano-glow: rgba(255, 94, 0, 0.35);
       --text: #f8fafc;
@@ -37,7 +39,7 @@
       padding: 0.75rem 0.5rem 3.5rem;
       overflow-x: hidden;
     }
-    .container { max-width: 1040px; margin: 0 auto; }
+    .container { max-width: 1060px; margin: 0 auto; }
 
     /* Header */
     header { text-align: center; margin-bottom: 1.25rem; padding: 0.5rem 0.25rem; }
@@ -54,9 +56,9 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       margin-bottom: 0.3rem; line-height: 1.15;
     }
-    .subtitle { color: var(--text-muted); font-size: 0.88rem; max-width: 720px; margin: 0 auto; line-height: 1.4; }
+    .subtitle { color: var(--text-muted); font-size: 0.88rem; max-width: 740px; margin: 0 auto; line-height: 1.4; }
 
-    /* TOP LIVE KPI DE CAJA REAL */
+    /* TOP LIVE DASHBOARD */
     .live-dashboard {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
       gap: 0.75rem; margin-bottom: 1.25rem;
@@ -64,13 +66,13 @@
     .kpi-box {
       background: var(--card-bg); border: 1px solid var(--card-border);
       border-radius: 1.1rem; padding: 1.15rem 1.25rem; backdrop-filter: blur(16px);
-      position: relative; overflow: hidden; transition: transform 0.2s ease, border-color 0.2s ease;
+      position: relative; overflow: hidden;
     }
     .kpi-box::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
     .kpi-box.kpi-bank::after { background: #38bdf8; }
     .kpi-box.kpi-debt::after { background: #ef4444; }
     .kpi-box.kpi-profit::after { background: #10b981; }
-    .kpi-box.kpi-status::after { background: #f59e0b; }
+    .kpi-box.kpi-freebet::after { background: #8b5cf6; }
 
     .kpi-label {
       font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;
@@ -82,7 +84,7 @@
     }
     .kpi-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
 
-    /* Tabs Bar */
+    /* TABS */
     .tabs-bar {
       display: flex; gap: 0.35rem; background: rgba(14, 20, 36, 0.85);
       padding: 0.35rem; border-radius: 1rem; border: 1px solid var(--card-border);
@@ -109,8 +111,8 @@
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Main Grid */
-    .grid-2 { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    /* GRID */
+    .grid-2 { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 1.25rem; margin-bottom: 1.25rem; }
     @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
 
     .box {
@@ -131,8 +133,31 @@
       font-weight: 700; text-transform: uppercase;
     }
 
-    /* Formularios Dinámicos */
-    .form-group { margin-bottom: 1rem; }
+    /* TYPE SELECTOR (TODOS LOS CASOS: RESCATE, STAKE NORMAL, FREEBET $0, ANULADA) */
+    .bet-type-selector {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 0.45rem; margin-bottom: 1rem;
+    }
+    .type-pill {
+      background: rgba(14, 21, 38, 0.9); border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.75rem; padding: 0.65rem 0.5rem; text-align: center; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .type-pill:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.08); }
+    .type-pill.active {
+      border-color: #ff5e00; background: rgba(255, 94, 0, 0.15); color: #fff;
+      box-shadow: 0 4px 12px rgba(255, 94, 0, 0.2);
+    }
+    .type-pill.type-free.active {
+      border-color: #8b5cf6; background: rgba(139, 92, 246, 0.18);
+      box-shadow: 0 4px 12px var(--purple-glow);
+    }
+    .type-icon { font-size: 1.1rem; margin-bottom: 0.2rem; }
+    .type-name { font-size: 0.78rem; font-weight: 700; }
+    .type-desc { font-size: 0.66rem; color: #94a3b8; margin-top: 0.15rem; }
+
+    /* FORMS */
+    .form-group { margin-bottom: 0.95rem; }
     label {
       display: flex; justify-content: space-between; font-size: 0.82rem;
       font-weight: 600; color: #cbd5e1; margin-bottom: 0.35rem;
@@ -150,71 +175,76 @@
     }
     .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
-    /* Quick Odds Buttons / Celdas de Ajuste */
+    /* CHIPS */
     .quick-chips-row {
       display: flex; gap: 0.4rem; overflow-x: auto; margin-bottom: 1rem; scrollbar-width: none;
     }
     .quick-chips-row::-webkit-scrollbar { display: none; }
     .chip {
       background: rgba(14, 21, 38, 0.9); border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 0.6rem; padding: 0.4rem 0.75rem; font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem; font-weight: 700; color: #cbd5e1; cursor: pointer; white-space: nowrap;
+      border-radius: 0.6rem; padding: 0.35rem 0.65rem; font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem; font-weight: 700; color: #cbd5e1; cursor: pointer; white-space: nowrap;
       transition: all 0.15s;
     }
-    .chip:hover, .chip.active {
-      border-color: #ff5e00; background: rgba(255, 94, 0, 0.15); color: #fff;
-    }
+    .chip:hover, .chip.active { border-color: #ff5e00; background: rgba(255, 94, 0, 0.15); color: #fff; }
 
-    /* BIG LIVE DECISION PANEL */
+    /* DECISION PANEL */
     .decision-banner {
       background: linear-gradient(135deg, rgba(14, 21, 38, 0.95), rgba(20, 29, 52, 0.9));
       border: 1px solid rgba(255, 94, 0, 0.35); border-radius: 1.15rem; padding: 1.35rem;
-      margin-bottom: 1.15rem; position: relative;
+      margin-bottom: 1rem; position: relative;
     }
+    .decision-banner.banner-free { border-color: rgba(139, 92, 246, 0.45); }
     .decision-title { font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
     .decision-amount {
       font-family: 'JetBrains Mono', monospace; font-size: 2.2rem; font-weight: 900;
       color: #ff5e00; margin: 0.3rem 0; letter-spacing: -0.03em;
     }
+    .decision-banner.banner-free .decision-amount { color: #c084fc; }
     .decision-details {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 0.65rem; padding-top: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.8rem;
     }
     .decision-item span { display: block; color: var(--text-muted); font-size: 0.7rem; }
     .decision-item strong { font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; color: #fff; }
 
-    /* ACTION BUTTONS: GANADA / PERDIDA */
+    /* ACTION BUTTONS (GANADA / PERDIDA / ANULADA) */
     .action-buttons-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem;
+      display: grid; grid-template-columns: 1.2fr 1.2fr 0.8fr; gap: 0.6rem; margin-top: 1rem;
     }
+    @media (max-width: 600px) { .action-buttons-grid { grid-template-columns: 1fr 1fr; } }
     .btn-action {
-      padding: 1rem 0.75rem; border: none; border-radius: 0.85rem; font-family: 'Outfit', sans-serif;
-      font-size: 1rem; font-weight: 800; cursor: pointer; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 0.25rem; transition: all 0.2s ease;
+      padding: 0.9rem 0.6rem; border: none; border-radius: 0.85rem; font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem; font-weight: 800; cursor: pointer; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 0.2rem; transition: all 0.2s ease;
     }
     .btn-action:active { transform: scale(0.97); }
     .btn-action-win {
-      background: linear-gradient(135deg, #10b981, #059669); color: #fff;
-      box-shadow: 0 4px 16px var(--green-glow);
+      background: linear-gradient(135deg, #10b981, #059669); color: #fff; box-shadow: 0 4px 16px var(--green-glow);
     }
     .btn-action-win:hover { background: linear-gradient(135deg, #059669, #047857); }
     .btn-action-lose {
-      background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff;
-      box-shadow: 0 4px 16px var(--red-glow);
+      background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; box-shadow: 0 4px 16px var(--red-glow);
     }
     .btn-action-lose:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
-    .action-sub { font-size: 0.72rem; font-weight: 500; opacity: 0.85; }
+    .btn-action-void {
+      background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+    }
+    .btn-action-void:hover { background: rgba(255, 255, 255, 0.2); }
+    .action-sub { font-size: 0.68rem; font-weight: 500; opacity: 0.85; }
 
-    /* Risk Alerts */
+    /* RISK ALERT */
     .risk-banner {
-      display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem;
-      border-radius: 0.75rem; margin-top: 0.85rem; font-size: 0.82rem; line-height: 1.35;
+      display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 1rem;
+      border-radius: 0.75rem; margin-top: 0.75rem; font-size: 0.82rem; line-height: 1.35;
     }
     .risk-safe { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; }
     .risk-warning { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fcd34d; }
     .risk-danger { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .risk-free { background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.35); color: #d8b4fe; }
 
-    /* Buttons */
+    /* BUTTONS */
     button.btn {
       width: 100%; padding: 0.85rem 1.2rem; border: none; border-radius: 0.75rem;
       font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.95rem;
@@ -224,11 +254,10 @@
     button.btn:active { transform: scale(0.98); }
     .btn-blue { background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff; box-shadow: 0 4px 14px var(--blue-glow); }
     .btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 14px var(--gold-glow); }
-    .btn-betano { background: linear-gradient(135deg, #ff5e00, #ea580c); color: #fff; box-shadow: 0 4px 14px var(--betano-glow); }
     .btn-outline { background: transparent; border: 1px solid rgba(255, 255, 255, 0.15); color: #cbd5e1; }
     .btn-outline:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 
-    /* Tables */
+    /* TABLES */
     table.data-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
     table.data-table th {
       background: rgba(14, 21, 38, 0.9); color: var(--text-muted); font-size: 0.72rem;
@@ -240,7 +269,8 @@
     .tag { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; }
     .tag-ganada { background: rgba(16, 185, 129, 0.2); color: #34d399; }
     .tag-perdida { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-    .tag-gasto { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .tag-freebet { background: rgba(139, 92, 246, 0.25); color: #c084fc; }
+    .tag-anulada { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
 
     .code-pill {
       display: inline-block; background: rgba(0, 0, 0, 0.5); padding: 0.15rem 0.45rem;
@@ -253,26 +283,26 @@
   <div class="container">
     <header>
       <div class="badge-bar">
-        <span>⚡</span> CONTROL DE BANKROLL EN TIEMPO REAL &middot; DINÁMICO
+        <span>⚡</span> GESTIÓN DINÁMICA &middot; COSTO $0 &middot; RESCATE &middot; FREEBETS
       </div>
-      <h1>Gestor de Caja &amp; Recuperación Variable</h1>
-      <p class="subtitle">Cada apuesta y cuota cambia todo el tiempo. Registra con 1 clic si ganaste o perdiste y el sistema recalcula tu Bankroll real y tu rescate exacto.</p>
+      <h1>Bankroll Master PRO &middot; Todos los Casos</h1>
+      <p class="subtitle">Soporta costo $0 (Freebets/Bonos/Sin deuda previa), apuestas variables, rescates matemáticos y resolución con 1 clic (Ganada, Perdida o Anulada).</p>
     </header>
 
-    <!-- LIVE KPI DASHBOARD -->
+    <!-- LIVE DASHBOARD -->
     <div class="live-dashboard">
       <div class="kpi-box kpi-bank">
         <div class="kpi-label">
-          <span>Bankroll Real en Vivo</span>
+          <span>Bankroll Real</span>
           <span style="cursor: pointer; color: #38bdf8;" onclick="ajustarBankrollModal()" title="Editar Bankroll">✏️</span>
         </div>
         <div class="kpi-val" id="liveBankroll" style="color: #38bdf8;">$ 1.000.000 COP</div>
-        <div class="kpi-sub" id="liveBankrollSub">Capital disponible en caja</div>
+        <div class="kpi-sub" id="liveBankrollSub">Capital en caja</div>
       </div>
 
       <div class="kpi-box kpi-debt" id="boxDeuda">
         <div class="kpi-label">
-          <span>Pérdida por Recuperar</span>
+          <span>Déficit / Costo a Recuperar</span>
           <span style="cursor: pointer; color: #ef4444;" onclick="ajustarDeudaModal()" title="Ajustar Déficit">✏️</span>
         </div>
         <div class="kpi-val" id="liveDeuda" style="color: #ef4444;">$ 0 COP</div>
@@ -285,42 +315,61 @@
         <div class="kpi-sub" id="liveNetoSub">Rendimiento global</div>
       </div>
 
-      <div class="kpi-box kpi-status" id="boxEstado">
-        <div class="kpi-label">Estado de la Caja</div>
-        <div class="kpi-val" id="liveEstado" style="font-size: 1.25rem;">🟢 Seguro</div>
-        <div class="kpi-sub" id="liveRacha">Racha: 0 jugadas</div>
+      <div class="kpi-box kpi-freebet">
+        <div class="kpi-label">Freebets / Bonos ($0)</div>
+        <div class="kpi-val" id="liveFreebets" style="color: #c084fc;">0 Usadas</div>
+        <div class="kpi-sub" id="liveFreebetsSub">Ganancia limpia $0 riesgo</div>
       </div>
     </div>
 
-    <!-- Navigation Tabs -->
+    <!-- TABS -->
     <div class="tabs-bar">
       <button class="tab-btn active" onclick="switchTab('apuesta')">
-        <span>⚡</span> Jugada en Curso & Rescate
+        <span>⚡</span> Jugada & Decisión
       </button>
       <button class="tab-btn" onclick="switchTab('ajustes')">
-        <span>🎯</span> Ajustar Bank & Pérdidas
+        <span>🎯</span> Ajustar Caja & Déficit
       </button>
       <button class="tab-btn" onclick="switchTab('historial')">
-        <span>📋</span> Historial de Movimientos
+        <span>📋</span> Historial
       </button>
       <button class="tab-btn" onclick="switchTab('telegram')">
-        <span>☁️</span> Nube & Telegram
+        <span>☁️</span> Telegram & Nube
       </button>
     </div>
 
-    <!-- TAB 1: JUGADA EN CURSO Y RESCATE DINÁMICO -->
+    <!-- TAB 1: JUGADA EN CURSO (TODOS LOS CASOS) -->
     <div id="tab-apuesta" class="tab-content active">
       <div class="grid-2">
-        <!-- Parámetros de la Jugada Variable -->
+        <!-- Parámetros de la Jugada -->
         <div class="box">
           <div class="box-header">
-            <div class="box-title"><span>🎲</span> ¿Cuál es tu Apuesta Ahora?</div>
-            <span class="box-badge" style="background: rgba(255, 94, 0, 0.2); color: #ff8a4c;">100% Variable</span>
+            <div class="box-title"><span>🎲</span> Configuración de la Apuesta</div>
+            <span class="box-badge" id="badgeCaso" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Costo Variable</span>
           </div>
 
-          <!-- Cuotas Rápidas Frecuentes -->
+          <!-- SELECTOR DE TIPO DE CASO (INCLUYE COSTO 0 / FREEBET / RESCATE) -->
+          <div class="bet-type-selector">
+            <div class="type-pill active" id="pillRescate" onclick="seleccionarCaso('rescate')">
+              <div class="type-icon">🛡️</div>
+              <div class="type-name">Rescate</div>
+              <div class="type-desc">Cubre pérdida</div>
+            </div>
+            <div class="type-pill" id="pillNormal" onclick="seleccionarCaso('normal')">
+              <div class="type-icon">🎯</div>
+              <div class="type-name">Stake Libre</div>
+              <div class="type-desc">Sin deuda / Fija</div>
+            </div>
+            <div class="type-pill type-free" id="pillFreebet" onclick="seleccionarCaso('freebet')">
+              <div class="type-icon">🎁</div>
+              <div class="type-name">Freebet ($0)</div>
+              <div class="type-desc">Riesgo Cero</div>
+            </div>
+          </div>
+
+          <!-- Chips de Cuota -->
           <div class="form-group">
-            <label><span>Atajos de Cuota Frecuente:</span></label>
+            <label><span>Atajos de Cuota Variable:</span></label>
             <div class="quick-chips-row">
               <span class="chip" onclick="setCuotaDirecta(1.45)">@ 1.45</span>
               <span class="chip" onclick="setCuotaDirecta(1.65)">@ 1.65</span>
@@ -334,41 +383,35 @@
 
           <div class="input-row">
             <div class="form-group">
-              <label>
-                <span>Cuota de la Jugada:</span>
-                <span class="hint">Variable</span>
-              </label>
+              <label><span>Cuota de la Jugada:</span></label>
               <input type="number" step="0.01" id="dynCuota" value="1.80" oninput="calcularEnVivo()" placeholder="1.80">
             </div>
-            <div class="form-group">
+            <div class="form-group" id="grpCosto">
               <label>
-                <span>Pérdida a Cubrir ($ COP):</span>
-                <span class="hint">Acumulada</span>
+                <span id="lblCosto">Costo / Pérdida a Cubrir:</span>
+                <span class="hint" style="cursor: pointer; color: #38bdf8;" onclick="setCostoCero()">Poner en $0</span>
               </label>
-              <input type="number" id="dynPerdida" value="80000" oninput="calcularEnVivo()" placeholder="80000">
+              <input type="number" id="dynPerdida" value="80000" oninput="calcularEnVivo()" placeholder="0">
             </div>
           </div>
 
           <div class="input-row">
+            <div class="form-group" id="grpMontoLibre" style="display: none;">
+              <label><span>Monto de la Apuesta ($ COP):</span></label>
+              <input type="number" id="dynMontoManual" value="20000" oninput="calcularEnVivo()" placeholder="20000">
+            </div>
             <div class="form-group">
-              <label>
-                <span>Ganancia Extra Deseada:</span>
-                <span class="hint">Opcional</span>
-              </label>
+              <label><span>Ganancia Extra Deseada:</span></label>
               <input type="number" id="dynGananciaExtra" value="0" oninput="calcularEnVivo()" placeholder="0">
             </div>
             <div class="form-group">
-              <label>
-                <span>Nombre / Partido:</span>
-                <span class="hint">Identificador</span>
-              </label>
-              <input type="text" id="dynConcepto" placeholder="Ej: Real Madrid / Tiro al arco">
+              <label><span>Partido / Selección:</span></label>
+              <input type="text" id="dynConcepto" placeholder="Ej: Dembélé 1 tiro / Real Madrid">
             </div>
           </div>
 
-          <!-- Selector de Modo: 1 Jugada o 2 Jugadas -->
-          <div class="form-group">
-            <label><span>Modo de Ejecución:</span></label>
+          <div class="form-group" id="grpModoPasos">
+            <label><span>Estrategia de Ejecución:</span></label>
             <div class="input-row">
               <button class="btn btn-blue" id="btnModo1Paso" onclick="setModoPasos(1)">1 Apuesta Directa</button>
               <button class="btn btn-outline" id="btnModo2Pasos" onclick="setModoPasos(2)">🛡️ 2 Pasos Seguros (50%)</button>
@@ -376,15 +419,15 @@
           </div>
         </div>
 
-        <!-- Panel de Decisión y Botones Ganada / Perdida -->
+        <!-- Panel de Decisión y 3 Botones de Resolución (Ganada / Perdida / Anulada) -->
         <div class="box">
           <div class="box-header">
-            <div class="box-title"><span>🎯</span> Decisión de Apuesta & Botones de 1 Clic</div>
+            <div class="box-title"><span>🎯</span> Decisión de Apuesta & Resolución</div>
             <span class="box-badge" id="badgeSemaforo">Calculando...</span>
           </div>
 
-          <div class="decision-banner">
-            <div class="decision-title">Monto que Debes Apostar:</div>
+          <div class="decision-banner" id="bannerDecision">
+            <div class="decision-title" id="decisionTitle">Debes Apostar de tu Bolsillo:</div>
             <div class="decision-amount" id="dynMontoApostar">$ 100.000 COP</div>
             <div class="decision-details">
               <div class="decision-item">
@@ -392,8 +435,8 @@
                 <strong id="dynRetorno">$ 180.000 COP</strong>
               </div>
               <div class="decision-item">
-                <span>Cubre de Pérdida:</span>
-                <strong id="dynCubre" style="color: #34d399;">$ 80.000 COP</strong>
+                <span>Beneficio Limpio:</span>
+                <strong id="dynBeneficioLimpio" style="color: #34d399;">$ 0 COP</strong>
               </div>
               <div class="decision-item">
                 <span>% de tu Caja Real:</span>
@@ -405,62 +448,67 @@
           <!-- Semáforo de Riesgo -->
           <div id="dynRiskBanner" class="risk-banner risk-warning">
             <span>⚠️</span>
-            <div id="dynRiskText">
-              <strong>Riesgo Moderado (10% del Bank):</strong> Si ganas recuperas tu pérdida acumulada y tu apuesta actual.
-            </div>
+            <div id="dynRiskText">Calculando veredicto...</div>
           </div>
 
-          <!-- BOTONES DE ACCIÓN RÁPIDA: GANADA O PERDIDA -->
+          <!-- BOTONES DE RESOLUCIÓN CON 1 CLIC (GANADA / PERDIDA / ANULADA) -->
           <div class="action-buttons-grid">
-            <button class="btn-action btn-action-win" onclick="resolverJugada(true)">
+            <button class="btn-action btn-action-win" onclick="resolverJugada('ganada')">
               <span>✅ ¡GANADA!</span>
-              <span class="action-sub">Suma ganancia y limpia deuda</span>
+              <span class="action-sub">Suma ganancia a caja</span>
             </button>
-            <button class="btn-action btn-action-lose" onclick="resolverJugada(false)">
+            <button class="btn-action btn-action-lose" onclick="resolverJugada('perdida')">
               <span>❌ ¡PERDIDA!</span>
-              <span class="action-sub">Descuenta de caja y sube deuda</span>
+              <span class="action-sub">Ajusta deuda y caja</span>
+            </button>
+            <button class="btn-action btn-action-void" onclick="resolverJugada('anulada')">
+              <span>⚪ ANULADA</span>
+              <span class="action-sub">Devuelve $0 impacto</span>
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- TAB 2: AJUSTES DIRECTOS DE BANKROLL Y PÉRDIDAS -->
+    <!-- TAB 2: AJUSTAR CAJA & DÉFICIT -->
     <div id="tab-ajustes" class="tab-content">
       <div class="grid-2">
         <div class="box">
           <div class="box-header">
-            <div class="box-title"><span>⚙️</span> Modificar Capital Inicial</div>
+            <div class="box-title"><span>⚙️</span> Modificar Bankroll Actual</div>
           </div>
           <div class="form-group">
             <label><span>Capital / Bankroll Total ($ COP):</span></label>
             <input type="number" id="inputAjustarBank" value="1000000">
           </div>
-          <button class="btn btn-blue" onclick="guardarAjusteBank()">Guardar Nuevo Bankroll</button>
+          <button class="btn btn-blue" onclick="guardarAjusteBank()">Actualizar Bankroll</button>
         </div>
 
         <div class="box">
           <div class="box-header">
-            <div class="box-title"><span>🚨</span> Añadir Pérdida Manual al Déficit</div>
+            <div class="box-title"><span>🚨</span> Añadir o Limpiar Déficit de Pérdidas</div>
           </div>
           <div class="form-group">
-            <label><span>Monto Perdido en otra jugada ($ COP):</span></label>
+            <label><span>Monto de Pérdida a Sumar ($ COP):</span></label>
             <input type="number" id="inputPerdidaManual" placeholder="Ej: 50000">
           </div>
           <div class="form-group">
             <label><span>Concepto:</span></label>
-            <input type="text" id="inputConceptoManual" placeholder="Ej: Combinada perdida en Betano / Gasto Canal">
+            <input type="text" id="inputConceptoManual" placeholder="Ej: Pérdida en Betano / Gasto Canal VIP">
           </div>
-          <button class="btn btn-gold" onclick="sumarPerdidaManual()">Añadir a la Bolsa de Recuperación</button>
+          <div class="input-row">
+            <button class="btn btn-gold" onclick="sumarPerdidaManual()">Sumar al Déficit</button>
+            <button class="btn btn-outline" onclick="dejarDeudaEnCero()">Limpiar Deuda ($0)</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- TAB 3: HISTORIAL COMPLETO -->
+    <!-- TAB 3: HISTORIAL -->
     <div id="tab-historial" class="tab-content">
       <div class="box">
         <div class="box-header">
-          <div class="box-title"><span>📋</span> Registro Histórico y Movimientos</div>
+          <div class="box-title"><span>📋</span> Registro Histórico</div>
           <div style="display: flex; gap: 0.5rem;">
             <button class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;" onclick="exportarBackupJSON()">💾 Exportar</button>
             <button class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.75rem; color: #f87171;" onclick="limpiarTodoHistorial()">🗑️ Limpiar</button>
@@ -472,10 +520,10 @@
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Resultado</th>
+                <th>Estado</th>
                 <th>Concepto</th>
                 <th>Cuota</th>
-                <th>Apostado</th>
+                <th>Invertido</th>
                 <th>Cobrado</th>
                 <th>Neto</th>
                 <th>Acción</th>
@@ -491,15 +539,15 @@
     <div id="tab-telegram" class="tab-content">
       <div class="box">
         <div class="box-header">
-          <div class="box-title"><span>☁️</span> Sincronizado en la Nube y Telegram</div>
+          <div class="box-title"><span>☁️</span> Enlace en Vivo en la Nube</div>
         </div>
         <div style="background: rgba(14, 21, 38, 0.75); border-radius: 0.85rem; padding: 1.15rem; font-size: 0.85rem; line-height: 1.5;">
-          <strong style="color: #ff5e00;">🌐 Tu enlace público en la nube:</strong><br>
+          <strong style="color: #ff5e00;">🌐 Tu enlace público oficial:</strong><br>
           <code class="code-pill">https://contatotal03-ship-it.github.io/control-apuestas/</code><br><br>
-          <strong style="color: #38bdf8;">🤖 Comandos directos en tu chat de Telegram:</strong><br>
-          • <code class="code-pill">/recuperar [monto] [cuota]</code> &rarr; Calcula con cualquier número que le mandes.<br>
-          • <code class="code-pill">/gana [monto] [cuota] [partido]</code> &rarr; Suma beneficio neto.<br>
-          • <code class="code-pill">/pierde [monto] [partido]</code> &rarr; Resta de caja y te prepara la recuperación.
+          <strong style="color: #38bdf8;">🤖 Soporte para todos los casos en Telegram:</strong><br>
+          • Costo CERO / Freebet ganada: `/gana 50000 2.00 Freebet Betano`<br>
+          • Apuesta perdida: `/pierde 80000 Dembele tiro`<br>
+          • Rescate exacto con cualquier cuota: `/recuperar 80000 1.80`
         </div>
       </div>
     </div>
@@ -512,9 +560,9 @@
 
     // ESTADO DINÁMICO EN VIVO
     let bankrollTotal = parseFloat(localStorage.getItem('bankroll_total')) || 1000000;
-    let deudaRecuperacion = parseFloat(localStorage.getItem('deuda_recuperacion')) || 80000;
+    let deudaRecuperacion = parseFloat(localStorage.getItem('deuda_recuperacion')) || 0;
     let movimientos = JSON.parse(localStorage.getItem('movimientos_apuestas')) || [];
-    let rachaVictorias = parseInt(localStorage.getItem('racha_victorias')) || 0;
+    let casoActual = 'rescate'; // 'rescate' | 'normal' | 'freebet'
     let pasosSeleccionados = 1;
 
     function formatCOP(num) {
@@ -533,10 +581,62 @@
       if (target) target.classList.add('active');
     }
 
+    function seleccionarCaso(caso) {
+      casoActual = caso;
+      document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+
+      const banner = document.getElementById('bannerDecision');
+      const grpCosto = document.getElementById('grpCosto');
+      const grpMontoLibre = document.getElementById('grpMontoLibre');
+      const grpModoPasos = document.getElementById('grpModoPasos');
+      const decisionTitle = document.getElementById('decisionTitle');
+      const badgeCaso = document.getElementById('badgeCaso');
+
+      banner.classList.remove('banner-free');
+
+      if (caso === 'rescate') {
+        document.getElementById('pillRescate').classList.add('active');
+        grpCosto.style.display = 'block';
+        grpMontoLibre.style.display = 'none';
+        grpModoPasos.style.display = 'block';
+        decisionTitle.innerText = 'Debes Apostar para Recuperar:';
+        badgeCaso.innerText = 'Modo Rescate';
+        badgeCaso.style.background = 'rgba(255, 94, 0, 0.2)';
+        badgeCaso.style.color = '#ff8a4c';
+        document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion || 80000);
+      } else if (caso === 'normal') {
+        document.getElementById('pillNormal').classList.add('active');
+        grpCosto.style.display = 'none';
+        grpMontoLibre.style.display = 'block';
+        grpModoPasos.style.display = 'none';
+        decisionTitle.innerText = 'Monto que Vas a Apostar:';
+        badgeCaso.innerText = 'Stake Libre (Costo $0 de rescate)';
+        badgeCaso.style.background = 'rgba(56, 189, 248, 0.2)';
+        badgeCaso.style.color = '#38bdf8';
+      } else if (caso === 'freebet') {
+        document.getElementById('pillFreebet').classList.add('active');
+        grpCosto.style.display = 'none';
+        grpMontoLibre.style.display = 'block';
+        grpModoPasos.style.display = 'none';
+        banner.classList.add('banner-free');
+        decisionTitle.innerText = 'Costo de tu Bolsillo: $0 (Bono / Freebet)';
+        badgeCaso.innerText = '🎁 Costo Cero ($0)';
+        badgeCaso.style.background = 'rgba(139, 92, 246, 0.25)';
+        badgeCaso.style.color = '#c084fc';
+      }
+
+      calcularEnVivo();
+    }
+
     function setCuotaDirecta(val) {
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
       if (event && event.currentTarget) event.currentTarget.classList.add('active');
       document.getElementById('dynCuota').value = val.toFixed(2);
+      calcularEnVivo();
+    }
+
+    function setCostoCero() {
+      document.getElementById('dynPerdida').value = 0;
       calcularEnVivo();
     }
 
@@ -547,41 +647,67 @@
       calcularEnVivo();
     }
 
-    // --- CÁLCULO DINÁMICO EN VIVO ---
+    // --- CÁLCULO EN VIVO SOPORTANDO COSTO $0 Y TODOS LOS CASOS ---
     function calcularEnVivo() {
       const cuota = parseFloat(document.getElementById('dynCuota').value) || 1.01;
-      const perdida = parseFloat(document.getElementById('dynPerdida').value) || 0;
+      const costoPerdida = parseFloat(document.getElementById('dynPerdida').value) || 0;
       const gananciaExtra = parseFloat(document.getElementById('dynGananciaExtra').value) || 0;
+      const montoManual = parseFloat(document.getElementById('dynMontoManual').value) || (bankrollTotal * 0.02);
 
-      if (cuota <= 1.0) {
-        document.getElementById('dynMontoApostar').innerText = 'Cuota > 1.0 requerida';
+      let montoApostar = 0;
+      let retornoBruto = 0;
+      let beneficioLimpio = 0;
+      let pctBank = 0;
+
+      if (casoActual === 'freebet') {
+        // CASO FREEBET: Costo de bolsillo = 0
+        montoApostar = montoManual;
+        retornoBruto = montoApostar * (cuota - 1); // Las freebets pagan ganancias netas
+        beneficioLimpio = retornoBruto;
+        pctBank = 0;
+
+        document.getElementById('dynMontoApostar').innerText = '$ 0 COP (Bolsillo)';
+        document.getElementById('dynRetorno').innerText = formatCOP(retornoBruto);
+        document.getElementById('dynBeneficioLimpio').innerText = formatCOP(beneficioLimpio);
+        document.getElementById('dynPctBank').innerText = '0.0% (Riesgo Cero)';
+
+        const riskBanner = document.getElementById('dynRiskBanner');
+        const badgeSemaforo = document.getElementById('badgeSemaforo');
+        riskBanner.className = 'risk-banner risk-free';
+        badgeSemaforo.style.background = 'rgba(139, 92, 246, 0.25)';
+        badgeSemaforo.style.color = '#c084fc';
+        badgeSemaforo.innerText = '🎁 Costo $0 (Freebet)';
+        document.getElementById('dynRiskText').innerHTML = `<strong>Riesgo CERO de bolsillo:</strong> Estás usando un bono o freebet de $ ${Math.round(montoApostar).toLocaleString('es-CO')}. Si ganas, te llevas <strong>${formatCOP(beneficioLimpio)}</strong> netos limpios a tu caja. Si pierdes, no pierdes un solo peso de tu Bankroll.`;
         return;
       }
 
-      // Si hay pérdida acumulada: calculamos el rescate exacto
-      // Apuesta = (Perdida + GananciaExtra) / (Cuota - 1)
-      let montoApuesta = 0;
-      if (perdida > 0) {
-        montoApuesta = (perdida + gananciaExtra) / (cuota - 1);
+      if (casoActual === 'normal' || costoPerdida === 0) {
+        // CASO NORMAL O COSTO CERO DE RESCATE
+        montoApostar = montoManual;
+        retornoBruto = montoApostar * cuota;
+        beneficioLimpio = retornoBruto - montoApostar;
+        pctBank = bankrollTotal > 0 ? ((montoApostar / bankrollTotal) * 100) : 0;
+
+        document.getElementById('dynMontoApostar').innerText = formatCOP(montoApostar);
+        document.getElementById('dynRetorno').innerText = formatCOP(retornoBruto);
+        document.getElementById('dynBeneficioLimpio').innerText = formatCOP(beneficioLimpio);
+        document.getElementById('dynPctBank').innerText = pctBank.toFixed(1) + '%';
       } else {
-        // Si no hay pérdida: apuesta normal de Stake 2 (2% del Bankroll)
-        montoApuesta = bankrollTotal * 0.02;
+        // CASO RESCATE CON COSTO / PÉRDIDA POSITIVA
+        montoApostar = (costoPerdida + gananciaExtra) / (cuota - 1);
+        if (pasosSeleccionados === 2) montoApostar = montoApostar / 2;
+
+        retornoBruto = montoApostar * cuota;
+        beneficioLimpio = gananciaExtra;
+        pctBank = bankrollTotal > 0 ? ((montoApostar / bankrollTotal) * 100) : 0;
+
+        document.getElementById('dynMontoApostar').innerText = formatCOP(montoApostar);
+        document.getElementById('dynRetorno').innerText = formatCOP(retornoBruto);
+        document.getElementById('dynBeneficioLimpio').innerText = formatCOP(beneficioLimpio);
+        document.getElementById('dynPctBank').innerText = pctBank.toFixed(1) + '%';
       }
 
-      if (pasosSeleccionados === 2 && perdida > 0) {
-        montoApuesta = montoApuesta / 2;
-      }
-
-      const retorno = montoApuesta * cuota;
-      const cubre = pasosSeleccionados === 1 ? perdida : (perdida / 2);
-      const pctBank = bankrollTotal > 0 ? ((montoApuesta / bankrollTotal) * 100) : 0;
-
-      document.getElementById('dynMontoApostar').innerText = formatCOP(montoApuesta);
-      document.getElementById('dynRetorno').innerText = formatCOP(retorno);
-      document.getElementById('dynCubre').innerText = formatCOP(cubre);
-      document.getElementById('dynPctBank').innerText = pctBank.toFixed(1) + '%';
-
-      // Semáforo de Riesgo
+      // SEMÁFORO DE RIESGO
       const riskBanner = document.getElementById('dynRiskBanner');
       const riskText = document.getElementById('dynRiskText');
       const badgeSemaforo = document.getElementById('badgeSemaforo');
@@ -603,40 +729,104 @@
         badgeSemaforo.style.background = 'rgba(239, 68, 68, 0.2)';
         badgeSemaforo.style.color = '#f87171';
         badgeSemaforo.innerText = '⚠️ ¡Peligro de Quiebra!';
-        riskText.innerHTML = `<strong>¡CUIDADO! Esta apuesta consume el ${pctBank.toFixed(1)}% de todo tu capital:</strong> Te recomendamos dividir la recuperación en 2 o buscar una cuota mayor para no arriesgar tanto capital de golpe.`;
+        riskText.innerHTML = `<strong>¡CUIDADO! Consume el ${pctBank.toFixed(1)}% de tu capital:</strong> No arriesgues tanto dinero de golpe; divide en 2 pasos o usa una cuota mayor.`;
       }
     }
 
-    // --- ACCIÓN DE 1 CLIC: RESOLVER JUGADA (GANADA O PERDIDA) ---
-    function resolverJugada(esGanada) {
+    // --- RESOLUCIÓN CON 1 CLIC (GANADA, PERDIDA, ANULADA) ---
+    function resolverJugada(estado) {
       const cuota = parseFloat(document.getElementById('dynCuota').value) || 1.80;
-      const perdidaActual = parseFloat(document.getElementById('dynPerdida').value) || 0;
-      const concepto = document.getElementById('dynConcepto').value.trim() || (esGanada ? 'Apuesta Ganada' : 'Apuesta Fallada');
+      const costoPerdida = parseFloat(document.getElementById('dynPerdida').value) || 0;
+      const montoManual = parseFloat(document.getElementById('dynMontoManual').value) || 20000;
+      const concepto = document.getElementById('dynConcepto').value.trim() || `Apuesta @ ${cuota.toFixed(2)}`;
 
-      // Obtener el monto apostado
-      let montoApostado = 0;
-      if (perdidaActual > 0) {
-        montoApostado = perdidaActual / (cuota - 1);
-        if (pasosSeleccionados === 2) montoApostado = montoApostado / 2;
-      } else {
-        montoApostado = bankrollTotal * 0.02;
+      let montoApostadoBolsillo = 0;
+      let retorno = 0;
+      let neto = 0;
+
+      if (estado === 'anulada') {
+        // CASO ANULADA / PUSH: Retorno = lo apostado, neto = 0
+        montoApostadoBolsillo = (casoActual === 'rescate' && costoPerdida > 0) ? (costoPerdida / (cuota - 1)) : montoManual;
+        retorno = montoApostadoBolsillo;
+        neto = 0;
+
+        movimientos.unshift({
+          id: Date.now(),
+          fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+          tipo: 'Apuesta Anulada (Push)',
+          categoria: 'anulada',
+          concepto: `${concepto} (Reembolso)`,
+          cuota: cuota,
+          invertido: montoApostadoBolsillo,
+          retorno: retorno,
+          neto: 0
+        });
+
+        alert(`⚪ Apuesta Anulada / Reembolsada.\nTu dinero volvió intacto a la caja con $0 impacto.`);
+        guardarEstado();
+        return;
       }
 
-      if (esGanada) {
-        const retorno = montoApostado * cuota;
-        const neto = retorno - montoApostado;
+      if (casoActual === 'freebet') {
+        // CASO FREEBET: Costo de bolsillo = 0
+        if (estado === 'ganada') {
+          retorno = montoManual * (cuota - 1);
+          neto = retorno;
+          bankrollTotal += neto;
 
-        // Sumar ganancia al Bankroll
+          movimientos.unshift({
+            id: Date.now(),
+            fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+            tipo: 'Freebet Ganada ($0)',
+            categoria: 'freebet',
+            concepto: `${concepto} (Bono Freebet)`,
+            cuota: cuota,
+            invertido: 0,
+            retorno: retorno,
+            neto: neto
+          });
+
+          alert(`🎉 ¡FREEBET GANADA! Ganaste ${formatCOP(neto)} netos con $0 de inversión de tu bolsillo.\nTu Bankroll sube a ${formatCOP(bankrollTotal)}.`);
+        } else {
+          // Freebet perdida: NO RESTA DE TU CAJA
+          movimientos.unshift({
+            id: Date.now(),
+            fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+            tipo: 'Freebet Perdida ($0)',
+            categoria: 'anulada',
+            concepto: `${concepto} (Bono Freebet fallado)`,
+            cuota: cuota,
+            invertido: 0,
+            retorno: 0,
+            neto: 0
+          });
+
+          alert(`ℹ️ Freebet no acertada. Como fue un bono de $0 costo de bolsillo, tu Bankroll no perdió ni un solo peso.`);
+        }
+        guardarEstado();
+        return;
+      }
+
+      // CASOS CON DINERO REAL
+      if (casoActual === 'rescate' && costoPerdida > 0) {
+        montoApostadoBolsillo = costoPerdida / (cuota - 1);
+        if (pasosSeleccionados === 2) montoApostadoBolsillo = montoApostadoBolsillo / 2;
+      } else {
+        montoApostadoBolsillo = montoManual;
+      }
+
+      if (estado === 'ganada') {
+        retorno = montoApostadoBolsillo * cuota;
+        neto = retorno - montoApostadoBolsillo;
         bankrollTotal += neto;
 
-        // Limpiar o descontar deuda de recuperación
-        if (pasosSeleccionados === 1) {
-          deudaRecuperacion = 0;
-        } else {
-          deudaRecuperacion = Math.max(0, deudaRecuperacion - (perdidaActual / 2));
+        if (casoActual === 'rescate' && costoPerdida > 0) {
+          if (pasosSeleccionados === 1) {
+            deudaRecuperacion = 0;
+          } else {
+            deudaRecuperacion = Math.max(0, deudaRecuperacion - (costoPerdida / 2));
+          }
         }
-
-        rachaVictorias = rachaVictorias >= 0 ? (rachaVictorias + 1) : 1;
 
         movimientos.unshift({
           id: Date.now(),
@@ -645,21 +835,16 @@
           categoria: 'ganada',
           concepto: concepto,
           cuota: cuota,
-          invertido: montoApostado,
+          invertido: montoApostadoBolsillo,
           retorno: retorno,
           neto: neto
         });
 
-        alert(`🎉 ¡FELICITACIONES! Ganaste ${formatCOP(neto)}.\n\nTu pérdida pendiente ha sido recuperada y tu Bankroll subió a ${formatCOP(bankrollTotal)}.`);
+        alert(`🎉 ¡GANADA! Cobraste ${formatCOP(retorno)} (Beneficio neto: ${formatCOP(neto)}).\nTu Bankroll aumentó a ${formatCOP(bankrollTotal)}.`);
       } else {
-        // PERDIDA:
-        // Descontar la apuesta del Bankroll
-        bankrollTotal -= montoApostado;
-
-        // Sumar lo perdido a la deuda acumulada
-        deudaRecuperacion += montoApostado;
-
-        rachaVictorias = rachaVictorias <= 0 ? (rachaVictorias - 1) : -1;
+        // PERDIDA CON DINERO REAL
+        bankrollTotal -= montoApostadoBolsillo;
+        deudaRecuperacion += montoApostadoBolsillo;
 
         movimientos.unshift({
           id: Date.now(),
@@ -668,26 +853,23 @@
           categoria: 'perdida',
           concepto: concepto,
           cuota: cuota,
-          invertido: montoApostado,
+          invertido: montoApostadoBolsillo,
           retorno: 0,
-          neto: -montoApostado
+          neto: -montoApostadoBolsillo
         });
 
-        alert(`⚠️ Apuesta perdida (${formatCOP(-montoApostado)}).\n\nTu saldo restante en caja es de ${formatCOP(bankrollTotal)}.\nLa nueva pérdida acumulada a rescatar es de ${formatCOP(deudaRecuperacion)}.`);
+        alert(`⚠️ Apuesta perdida (${formatCOP(-montoApostadoBolsillo)}).\nTu nuevo saldo en caja es de ${formatCOP(bankrollTotal)}.\nEl déficit total a recuperar es de ${formatCOP(deudaRecuperacion)}.`);
       }
 
-      // Actualizar campos
       document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion);
       document.getElementById('dynConcepto').value = '';
-
       guardarEstado();
     }
 
-    // --- GUARDAR Y ACTUALIZAR VISTAS ---
+    // --- GESTIÓN DE ESTADO ---
     function guardarEstado() {
       localStorage.setItem('bankroll_total', bankrollTotal);
       localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
-      localStorage.setItem('racha_victorias', rachaVictorias);
       localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
 
       renderDashboard();
@@ -695,7 +877,6 @@
     }
 
     function renderDashboard() {
-      // Top Live KPIs
       document.getElementById('liveBankroll').innerText = formatCOP(bankrollTotal);
       document.getElementById('liveBankrollSub').innerText = `Stake 1 (1%) = ${formatCOP(bankrollTotal * 0.01)}`;
 
@@ -707,44 +888,37 @@
       if (deudaRecuperacion > 0) {
         elDeuda.style.color = '#ef4444';
         boxDeuda.className = 'kpi-box kpi-debt';
-        elDeudaSub.innerText = 'En fase de recuperación';
+        elDeudaSub.innerText = 'Déficit pendiente por recuperar';
       } else {
         elDeuda.style.color = '#10b981';
         boxDeuda.className = 'kpi-box kpi-profit';
-        elDeudaSub.innerText = '¡Caja 100% limpia sin deudas!';
+        elDeudaSub.innerText = '¡Caja libre de deudas ($0)!';
       }
 
-      // Beneficio Neto
       let totalGanancias = 0;
-      let totalGastado = 0;
+      let freebetsContadas = 0;
       movimientos.forEach(m => {
         totalGanancias += m.neto;
-        if (m.categoria !== 'gasto') totalGastado += m.invertido;
+        if (m.categoria === 'freebet') freebetsContadas++;
       });
 
       const elNeto = document.getElementById('liveNeto');
       elNeto.innerText = (totalGanancias >= 0 ? '+' : '') + formatCOP(totalGanancias);
       elNeto.style.color = totalGanancias >= 0 ? 'var(--green)' : 'var(--red)';
 
-      // Estado y Racha
-      const elEstado = document.getElementById('liveEstado');
-      const elRacha = document.getElementById('liveRacha');
-      if (rachaVictorias > 0) {
-        elEstado.innerHTML = `<span style="color:#10b981;">🚀 En Racha (+${rachaVictorias})</span>`;
-      } else if (rachaVictorias < 0) {
-        elEstado.innerHTML = `<span style="color:#ef4444;">⚠️ Racha (${rachaVictorias})</span>`;
-      } else {
-        elEstado.innerHTML = `<span>🟢 Estable</span>`;
-      }
-      elRacha.innerText = `${movimientos.length} jugadas registradas`;
+      document.getElementById('liveFreebets').innerText = `${freebetsContadas} Ganadas`;
 
-      // Renderizar Historial
+      // Renderizar tabla
       const tbody = document.getElementById('historialBody');
       tbody.innerHTML = '';
       movimientos.forEach(m => {
         const tr = document.createElement('tr');
-        const tagClass = m.categoria === 'ganada' ? 'tag-ganada' : (m.categoria === 'perdida' ? 'tag-perdida' : 'tag-gasto');
-        const netoColor = m.neto >= 0 ? '#34d399' : '#f87171';
+        let tagClass = 'tag-ganada';
+        if (m.categoria === 'perdida') tagClass = 'tag-perdida';
+        else if (m.categoria === 'freebet') tagClass = 'tag-freebet';
+        else if (m.categoria === 'anulada') tagClass = 'tag-anulada';
+
+        const netoColor = m.neto > 0 ? '#34d399' : (m.neto < 0 ? '#f87171' : '#94a3b8');
 
         tr.innerHTML = `
           <td>${m.fecha}</td>
@@ -760,9 +934,8 @@
       });
     }
 
-    // --- ACCIONES MODALES Y MANUALES ---
     function ajustarBankrollModal() {
-      const nuevo = prompt('Ingresa tu Bankroll o Capital Total actual ($ COP):', Math.round(bankrollTotal));
+      const nuevo = prompt('Ingresa tu Bankroll actual ($ COP):', Math.round(bankrollTotal));
       if (nuevo !== null) {
         const val = parseFloat(nuevo.replace(/\./g, '').replace(/,/g, ''));
         if (val && !isNaN(val) && val > 0) {
@@ -773,7 +946,7 @@
     }
 
     function ajustarDeudaModal() {
-      const nuevo = prompt('Ingresa la Pérdida Acumulada actual que deseas recuperar ($ COP):', Math.round(deudaRecuperacion));
+      const nuevo = prompt('Ingresa el Déficit actual que deseas recuperar ($ COP):', Math.round(deudaRecuperacion));
       if (nuevo !== null) {
         const val = parseFloat(nuevo.replace(/\./g, '').replace(/,/g, ''));
         if (!isNaN(val) && val >= 0) {
@@ -805,7 +978,7 @@
       movimientos.unshift({
         id: Date.now(),
         fecha: new Date().toLocaleDateString('es-CO'),
-        tipo: 'Pérdida Registrada',
+        tipo: 'Pérdida Manual',
         categoria: 'perdida',
         concepto: concepto,
         cuota: 1.0,
@@ -819,7 +992,15 @@
       document.getElementById('inputConceptoManual').value = '';
 
       guardarEstado();
-      alert(`⚠️ Se sumaron ${formatCOP(val)} a la deuda de recuperación.\nTotal por recuperar: ${formatCOP(deudaRecuperacion)}.`);
+      alert(`⚠️ Se sumaron ${formatCOP(val)} al déficit. Total por recuperar: ${formatCOP(deudaRecuperacion)}.`);
+      switchTab('apuesta');
+    }
+
+    function dejarDeudaEnCero() {
+      deudaRecuperacion = 0;
+      document.getElementById('dynPerdida').value = 0;
+      guardarEstado();
+      alert('✅ Déficit de recuperación reiniciado a $0 COP.');
       switchTab('apuesta');
     }
 
@@ -853,7 +1034,7 @@
       a.remove();
     }
 
-    // Inicialización al cargar
+    // Inicializar
     document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion);
     document.getElementById('inputAjustarBank').value = bankrollTotal;
     renderDashboard();

@@ -442,6 +442,16 @@
         </div>
         <div id="betanoStatusFeedback" style="font-size: 0.78rem; margin-top: 0.45rem; line-height: 1.4;"></div>
 
+        <!-- Accesos directos a boletos guardados -->
+        <div style="margin-top: 0.65rem; display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
+          <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 700;">Seleccionar Boleto:</span>
+          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('ATY8SP4H')">ATY8SP4H (@ 1.44)</button>
+          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('W5WMGTME')">W5WMGTME (@ 129.37)</button>
+          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('7UPLY37T')">7UPLY37T (@ 1.67)</button>
+          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('87HRQDSU')">87HRQDSU (@ 7.50)</button>
+          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('WVQY3EYW')">WVQY3EYW (@ 2.00)</button>
+        </div>
+
         <!-- TARJETA DE ESTRATEGIA Y BOLETO BETANO EN VIVO -->
         <div id="cardBoletoBetano" style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
@@ -925,8 +935,22 @@
           { evento: '⚽ Santa Fe vs Jaguares', pick: 'Santa Fe Gana & Goles +1.5', mercado: 'Resultado & Total Goles', odds: 1.45, color: '#10b981' }
         ],
         cashoutNote: 'Si los primeros 2 partidos van ganando (Cali y América) y Betano te ofrece ~$3.050 COP, considera cobrar anticipadamente para asegurar el 250% de ganancia neta sin sufrir el último partido.'
+      },
+      'WVQY3EYW': {
+        code: 'WVQY3EYW',
+        tipo: 'Boleto Betano (#WVQY3EYW)',
+        cuota: 2.00,
+        partidos: [
+          { evento: '⚽ Jugada Betano (#WVQY3EYW)', pick: 'Selección registrada', mercado: 'Cuota ajustable en el panel', odds: 2.00, color: '#ff5e00' }
+        ],
+        cashoutNote: 'En Betano los enlaces compartidos expiran al comenzar los partidos. Puedes ajustar la cuota en vivo para recalcular el rescate o cobertura.'
       }
     };
+
+    function cargarBoletoRapido(code) {
+      document.getElementById('betanoLinkInput').value = `https://www.betano.co/bookingcode/${code}/`;
+      analizarLinkBetano();
+    }
 
     function renderPartidosBoleto(partidos) {
       const container = document.getElementById('betanoPartidosContainer');

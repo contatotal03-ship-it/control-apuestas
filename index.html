@@ -2,6 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Bankroll Master PRO - Control Dinámico & Todos los Casos de Apuesta</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -437,6 +440,7 @@
             <span>⚡</span> Cargar y Analizar Jugada
           </button>
         </div>
+        <div id="betanoStatusFeedback" style="font-size: 0.78rem; margin-top: 0.45rem; line-height: 1.4;"></div>
 
         <!-- TARJETA DE ESTRATEGIA Y BOLETO BETANO EN VIVO -->
         <div id="cardBoletoBetano" style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem;">
@@ -941,13 +945,18 @@
 
     function analizarLinkBetano() {
       const linkRaw = document.getElementById('betanoLinkInput').value.trim();
-      if (!linkRaw) return alert('Pega el enlace o booking code de Betano');
+      const feedbackEl = document.getElementById('betanoStatusFeedback');
+      if (!linkRaw) {
+        if (feedbackEl) feedbackEl.innerHTML = '';
+        return;
+      }
 
-      // Extraer código (ej: M83S7XXL o 87HRQDSU)
+      // Extraer código (ej: WVQY3EYW o 87HRQDSU)
       const codeMatch = linkRaw.match(/bookingcode\/([a-zA-Z0-9]+)/i) || linkRaw.match(/([a-zA-Z0-9]{6,12})/);
-      const code = codeMatch ? codeMatch[1].toUpperCase() : 'M83S7XXL';
+      const code = codeMatch ? codeMatch[1].toUpperCase() : 'BETANO';
 
       let boleto = BETANO_DATABASE[code];
+      const esPredefinido = !!boleto;
 
       // Si no está en base de datos predefinida, crear boleto dinámico sin interrumpir con prompt
       if (!boleto) {
@@ -957,10 +966,10 @@
         }
         boleto = {
           code: code,
-          tipo: `Boleto Betano #${code}`,
+          tipo: `Boleto #${code}`,
           cuota: cuotaActual,
           partidos: [
-            { evento: `⚽ Evento Betano (#${code})`, pick: 'Selección cargada desde link', mercado: 'Boleto compartido', odds: cuotaActual, color: '#ff5e00' }
+            { evento: `⚽ Boleto Betano #${code}`, pick: 'Selección desde enlace', mercado: 'Cuota ajustable en el panel', odds: cuotaActual, color: '#ff5e00' }
           ],
           cashoutNote: 'Evalúa Cash Out en vivo si tu jugada va a favor antes de que termine el tiempo reglamentario.'
         };
@@ -971,6 +980,14 @@
       document.getElementById('dynCuota').value = cuotaBoleto.toFixed(2);
       document.getElementById('betanoBoletoTitulo').innerText = `${boleto.tipo} (#${code})`;
       document.getElementById('betanoCuotaTotal').innerText = `@ ${cuotaBoleto.toFixed(2)}`;
+
+      if (feedbackEl) {
+        if (esPredefinido) {
+          feedbackEl.innerHTML = `<span style="color: #10b981; font-weight: 700;">✅ Boleto #${code} cargado con ${boleto.partidos.length} selecciones oficiales (@ ${cuotaBoleto.toFixed(2)}).</span>`;
+        } else {
+          feedbackEl.innerHTML = `<span style="color: #fbbf24; font-weight: 600;">⚡ Boleto #${code} detectado. En Betano los enlaces compartidos caducan cuando los partidos inician o terminan. Tu cuota actual es <strong>@ ${cuotaBoleto.toFixed(2)}</strong> (puedes cambiarla abajo en "Cuota Oficial de Betano").</span>`;
+        }
+      }
 
       renderPartidosBoleto(boleto.partidos);
       actualizarEstrategiaBetano(cuotaBoleto, boleto.cashoutNote);

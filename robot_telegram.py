@@ -139,6 +139,17 @@ def obtener_info_betano(code_or_url):
             data = json.loads(res.read().decode('utf-8'))
             legs = data.get('data', {}).get('legs', [])
             bets = data.get('data', {}).get('bets', [])
+            title_status = data.get('data', {}).get('title', '')
+
+            if not legs:
+                return {
+                    'success': True,
+                    'code': code,
+                    'cuota': 1.80,
+                    'tipo': f'Boleto #{code}',
+                    'expirado': True,
+                    'partidos': []
+                }
             
             # Buscar si hay apuesta combinada / acumuladora
             acc_bet = next((b for b in bets if b.get('type', '').startswith('ACC')), None)
@@ -154,7 +165,7 @@ def obtener_info_betano(code_or_url):
                 cuota_total = float(bets[0]['odds'])
                 tipo_boleto = bets[0].get('typeName', 'Simple')
             else:
-                cuota_total = float(legs[0].get('odds', 1.0)) if legs else 1.0
+                cuota_total = float(legs[0].get('odds', 1.0)) if legs else 1.80
                 tipo_boleto = 'Simple'
 
             partidos = []
@@ -244,6 +255,11 @@ def handle_message(msg):
         # Lista de partidos formateada
         if partidos:
             txt_partidos = "\n".join([f"{i+1}. ⚽ {p['evento']} (@ {p['odds']:.2f})\n   _Pick: {p['pick']}_" for i, p in enumerate(partidos)])
+        elif info_betano.get('expirado'):
+            txt_partidos = (
+                f"ℹ️ *Aviso Betano:* Los partidos de este boleto (`#{code}`) ya comenzaron o el enlace expiró en Betano (Betano desactiva los carritos compartidos al iniciar los partidos).\n"
+                f"👉 Si estás jugando este boleto, puedes abrir la calculadora y poner la cuota exacta de tu jugada."
+            )
         else:
             txt_partidos = f"1. ⚽ Jugada #{code} (@ {cuota:.2f})"
 

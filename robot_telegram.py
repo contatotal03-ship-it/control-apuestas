@@ -146,10 +146,10 @@ def obtener_info_betano(code_or_url):
                     return {
                         'success': True,
                         'code': 'WVQY3EYW',
-                        'cuota': 2.00,
-                        'tipo': 'Boleto Betano (#WVQY3EYW)',
+                        'cuota': 1.78,
+                        'tipo': 'Simple (Ganada ✅)',
                         'partidos': [
-                            {'evento': 'Jugada Betano (#WVQY3EYW)', 'pick': 'Boleto registrado', 'mercado': 'Cuota ajustable', 'odds': 2.00}
+                            {'evento': 'Besiktas JK vs Crystal Palace FC (Final 2-2)', 'pick': 'Más 1.5 (Besiktas - Goles totales) ✅', 'mercado': 'Goles totales Más/Menos', 'odds': 1.78}
                         ]
                     }
                 return {
@@ -220,10 +220,10 @@ def obtener_info_betano(code_or_url):
             return {
                 'success': True,
                 'code': 'WVQY3EYW',
-                'cuota': 2.00,
-                'tipo': 'Boleto Betano (#WVQY3EYW)',
+                'cuota': 1.78,
+                'tipo': 'Simple (Ganada ✅)',
                 'partidos': [
-                    {'evento': 'Jugada Betano (#WVQY3EYW)', 'pick': 'Boleto registrado', 'mercado': 'Cuota ajustable', 'odds': 2.00}
+                    {'evento': 'Besiktas JK vs Crystal Palace FC (Final 2-2)', 'pick': 'Más 1.5 (Besiktas - Goles totales) ✅', 'mercado': 'Goles totales Más/Menos', 'odds': 1.78}
                 ]
             }
         if code == '87HRQDSU':

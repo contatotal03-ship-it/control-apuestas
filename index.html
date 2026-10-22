@@ -443,13 +443,13 @@
         <div id="betanoStatusFeedback" style="font-size: 0.78rem; margin-top: 0.45rem; line-height: 1.4;"></div>
 
         <!-- Accesos directos a boletos guardados -->
-        <div style="margin-top: 0.65rem; display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center;">
-          <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 700;">Seleccionar Boleto:</span>
-          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('ATY8SP4H')">ATY8SP4H (@ 1.44)</button>
-          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('W5WMGTME')">W5WMGTME (@ 129.37)</button>
-          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('7UPLY37T')">7UPLY37T (@ 1.67)</button>
-          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem;" onclick="cargarBoletoRapido('87HRQDSU')">87HRQDSU (@ 7.50)</button>
-          <button type="button" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.74rem; border-color: #10b981; color: #10b981;" onclick="cargarBoletoRapido('WVQY3EYW')">WVQY3EYW (@ 1.78 Ganada ✅)</button>
+        <div style="margin-top: 0.75rem; display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center;">
+          <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 700; margin-right: 0.2rem;">Boletos Rápidos:</span>
+          <button type="button" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 9999px; padding: 0.35rem 0.75rem; font-size: 0.74rem; color: #f1f5f9; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('ATY8SP4H')">ATY8SP4H (@ 1.44)</button>
+          <button type="button" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 9999px; padding: 0.35rem 0.75rem; font-size: 0.74rem; color: #f1f5f9; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('W5WMGTME')">W5WMGTME (@ 129.37)</button>
+          <button type="button" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 9999px; padding: 0.35rem 0.75rem; font-size: 0.74rem; color: #f1f5f9; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('7UPLY37T')">7UPLY37T (@ 1.67)</button>
+          <button type="button" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); border-radius: 9999px; padding: 0.35rem 0.75rem; font-size: 0.74rem; color: #f1f5f9; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('87HRQDSU')">87HRQDSU (@ 7.50)</button>
+          <button type="button" style="background: rgba(16, 185, 129, 0.2); border: 1.5px solid #10b981; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.74rem; color: #34d399; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('WVQY3EYW')">WVQY3EYW (@ 1.78 Ganada ✅)</button>
         </div>
 
         <!-- TARJETA DE ESTRATEGIA Y BOLETO BETANO EN VIVO -->
@@ -486,6 +486,9 @@
               <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.15rem;">Santa Fe Gana &bull; Santa Fe +1.5 Goles</div>
             </div>
           </div>
+
+          <!-- BANNER DE APLICAR GANANCIA DIRECTA (SI EL BOLETO YA GANÓ) -->
+          <div id="boxResolucionBoleto"></div>
 
           <!-- ESTRATEGIA MATEMÁTICA SEGÚN COSTO -->
           <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 0.85rem; padding: 0.95rem; font-size: 0.84rem; line-height: 1.5;" id="boxEstrategiaBetano">
@@ -940,6 +943,10 @@
         code: 'WVQY3EYW',
         tipo: 'Simple (Ganada ✅)',
         cuota: 1.78,
+        montoApostado: 122453,
+        gananciaTotal: 217966,
+        beneficioLimpio: 95513,
+        estado: 'Ganada',
         partidos: [
           { 
             evento: '⚽ Besiktas JK vs Crystal Palace FC (Final 2-2)', 
@@ -1020,8 +1027,93 @@
       }
 
       renderPartidosBoleto(boleto.partidos);
+
+      // Banner para boletos resueltos/ganados en Betano
+      const boxResolucion = document.getElementById('boxResolucionBoleto');
+      if (boxResolucion) {
+        if (boleto.estado === 'Ganada' || boleto.gananciaTotal) {
+          const yaAplicado = movimientos.some(m => m.code === code || (m.concepto && m.concepto.includes(code)));
+          const apostado = boleto.montoApostado || 122453;
+          const cobro = boleto.gananciaTotal || 217966;
+          const neto = boleto.beneficioLimpio || (cobro - apostado);
+
+          if (yaAplicado) {
+            boxResolucion.innerHTML = `
+              <div style="background: rgba(16, 185, 129, 0.12); border: 1.5px solid #10b981; border-radius: 0.75rem; padding: 0.85rem 1rem; margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem;">
+                <div>
+                  <div style="color: #34d399; font-weight: 800; font-size: 0.95rem;">✅ ¡Ganancia de este Boleto Ya Aplicada al Bankroll!</div>
+                  <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 0.15rem;">Apostado: ${formatCOP(apostado)} &bull; Cobrado: ${formatCOP(cobro)} &bull; Ganancia limpia sumada: <strong style="color: #34d399;">+${formatCOP(neto)}</strong></div>
+                </div>
+                <span class="box-badge" style="background: #10b981; color: #fff; font-size: 0.75rem; padding: 0.35rem 0.75rem;">Registrada en Historial</span>
+              </div>
+            `;
+          } else {
+            boxResolucion.innerHTML = `
+              <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 95, 70, 0.35)); border: 2px solid #10b981; border-radius: 0.85rem; padding: 1rem 1.15rem; margin-bottom: 0.85rem; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                <div>
+                  <div style="color: #34d399; font-weight: 900; font-size: 1.05rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <span>🎉</span> ¡BOLETO RESUELTO GANADO EN BETANO!
+                  </div>
+                  <div style="font-size: 0.82rem; color: #f1f5f9; margin-top: 0.3rem; line-height: 1.4;">
+                    Apostaste: <strong>${formatCOP(apostado)}</strong> &bull; Betano pagó: <strong>${formatCOP(cobro)}</strong><br>
+                    Ganancia Limpia Neta: <strong style="color: #34d399; font-size: 0.95rem;">+${formatCOP(neto)}</strong>
+                  </div>
+                </div>
+                <button type="button" style="background: #10b981; color: #fff; font-weight: 900; font-size: 0.88rem; padding: 0.75rem 1.35rem; border-radius: 0.6rem; cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,0.5); border: none; display: inline-flex; align-items: center; gap: 0.4rem;" onclick="aplicarGananciaBoletoDirecto('${code}')">
+                  <span>💰</span> Aplicar y Sumar al Bankroll (+ ${formatCOP(neto)})
+                </button>
+              </div>
+            `;
+          }
+        } else {
+          boxResolucion.innerHTML = '';
+        }
+      }
+
       actualizarEstrategiaBetano(cuotaBoleto, boleto.cashoutNote);
       calcularEnVivo();
+    }
+
+    function aplicarGananciaBoletoDirecto(code) {
+      const boleto = BETANO_DATABASE[code];
+      if (!boleto) return;
+
+      const apostado = boleto.montoApostado || 122453;
+      const cobro = boleto.gananciaTotal || 217966;
+      const neto = boleto.beneficioLimpio || (cobro - apostado);
+
+      // Si el bankroll actual está en el saldo previo a la apuesta ($122.453 o similar), ajustarlo al cobro total $217.966
+      // De lo contrario, sumarle la ganancia limpia (neto)
+      if (bankrollTotal <= apostado) {
+        bankrollTotal = cobro;
+      } else {
+        bankrollTotal += neto;
+      }
+
+      // Agregar movimiento al historial
+      movimientos.unshift({
+        id: Date.now(),
+        code: code,
+        fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+        tipo: 'Apuesta Ganada Betano',
+        categoria: 'ganada',
+        concepto: `${boleto.tipo}: Besiktas Más 1.5 ✅ (#${code})`,
+        cuota: boleto.cuota,
+        invertido: apostado,
+        retorno: cobro,
+        neto: neto
+      });
+
+      // Si había deuda registrada, reducirla
+      if (deudaRecuperacion > 0) {
+        deudaRecuperacion = Math.max(0, deudaRecuperacion - neto);
+      }
+
+      guardarEstado();
+      renderDashboard();
+      analizarLinkBetano();
+
+      alert(`🎉 ¡GANANCIA APLICADA AL BANKROLL CON ÉXITO!\n\nBoleto #${code} Ganado:\n• Invertido en Betano: ${formatCOP(apostado)}\n• Cobrado de Betano: ${formatCOP(cobro)}\n• Beneficio Limpio Sumado: +${formatCOP(neto)}\n\nTu nuevo Bankroll Real en caja es: ${formatCOP(bankrollTotal)}.\nSe actualizó tu Win Rate (100%) y se registró en tu Historial de Jugadas.`);
     }
 
     function actualizarEstrategiaBetano(cuota, customCashout) {

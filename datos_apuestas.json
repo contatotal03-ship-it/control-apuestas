@@ -1,7 +1,20 @@
 {
-  "bankroll": 1000000,
-  "deuda": 0,
-  "movimientos": [],
+  "bankroll": 792033,
+  "deuda": 207967,
+  "movimientos": [
+    {
+      "id": 1792770000000,
+      "code": "IMG_9437",
+      "fecha": "23/10/2026 12:00",
+      "tipo": "Apuesta Perdida Betano",
+      "categoria": "perdida",
+      "concepto": "Simple #IMG_9437 (Flamengo vs Estudiantes)",
+      "cuota": 2.27,
+      "invertido": 207967,
+      "retorno": 0,
+      "neto": -207967
+    }
+  ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-23T12:00:00Z"
+  "ultimaActualizacion": "2026-10-23T12:30:00Z"
 }

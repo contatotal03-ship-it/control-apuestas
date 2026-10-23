@@ -1398,14 +1398,23 @@
         notes.innerHTML = '';
       }
 
-      modalCallbackConfirm = config.onConfirm || null;
-      modalCallbackCancel = config.onCancel || null;
+      const extraBtnsHtml = (config.botonesExtra || []).map((b, idx) => `
+        <button type="button" class="pro-btn-secondary" style="${b.estilo || ''}" id="proModalExtraBtn_${idx}">
+          ${b.texto}
+        </button>
+      `).join('');
 
       actions.innerHTML = `
+        ${extraBtnsHtml}
         <button type="button" class="pro-btn-primary" onclick="ejecutarAccionModalConfirm()">
           <span>${config.botonTexto || '¡Excelente, Continuar!'}</span> 🚀
         </button>
       `;
+
+      (config.botonesExtra || []).forEach((b, idx) => {
+        const el = document.getElementById(`proModalExtraBtn_${idx}`);
+        if (el && b.onClick) el.onclick = b.onClick;
+      });
 
       overlay.classList.add('active');
 
@@ -2224,49 +2233,90 @@
       }
 
       if (accion === 'perdida') {
-        const neto = -apostado;
-        bankrollTotal = Math.max(0, bankrollTotal - apostado);
-        deudaRecuperacion += apostado;
+        const valorSugerido = (boleto.montoApostado && boleto.montoApostado <= bankrollTotal && boleto.montoApostado < 100000) 
+          ? boleto.montoApostado 
+          : (parseFloat(document.getElementById('dynMontoManual').value) || 20000);
 
-        movimientos.unshift({
-          id: Date.now(),
-          code: code,
-          fecha: fechaStr,
-          tipo: 'Apuesta Perdida Betano',
-          categoria: 'perdida',
-          concepto: `${boleto.tipo} (Perdida #${code})`,
-          cuota: cuota,
-          invertido: apostado,
-          retorno: 0,
-          neto: neto
-        });
-
-        const idxAct = apuestasActivas.findIndex(a => a.code === code);
-        if (idxAct !== -1) apuestasActivas.splice(idxAct, 1);
-
-        guardarEstado();
-        renderDashboard();
-        analizarLinkBetano();
-
-        const cuotaSug = 1.80;
-        const rescateSug = deudaRecuperacion / (cuotaSug - 1.0);
-
-        mostrarCelebracionModal({
-          tipo: 'perdida',
-          badge: '🔴 APUESTA PERDIDA REGISTRADA',
+        mostrarModalInputPro({
+          badge: '🔴 CONFIRMAR PÉRDIDA',
           icon: '📉',
-          titulo: 'Resultado Registrado: Boleto Perdido',
-          subtitulo: `Boleto #${code} (@ ${cuota.toFixed(2)}) &middot; -${formatCOP(apostado)}`,
-          metrics: [
-            { label: 'Pérdida Restada de Caja', valor: `-${formatCOP(apostado)}`, color: '#ef4444', highlight: 'red' },
-            { label: 'Déficit Total Acumulado', valor: formatCOP(deudaRecuperacion), color: '#f59e0b', highlight: 'orange' },
-            { label: 'Bankroll Restante', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
-          ],
-          notes: [
-            `🛡️ <strong>Plan de Rescate Activado:</strong> Para recuperar tus <strong>${formatCOP(deudaRecuperacion)}</strong> en la siguiente jugada (a cuota sugerida @${cuotaSug.toFixed(2)}), el sistema recomienda apostar <strong>${formatCOP(rescateSug)}</strong> (o en 2 pasos seguros de ${formatCOP(rescateSug/2)}).`,
-            '💡 Mantén la disciplina emocional y no apuestes fuera de tu gestión de bankroll.'
-          ],
-          botonTexto: 'Ver Estrategia de Rescate 🛡️'
+          tipo: 'perdida',
+          accentColor: '#ef4444',
+          titulo: '¿Cuánto dinero perdiste en esta jugada?',
+          subtitulo: `Boleto #${code} (@ ${cuota.toFixed(2)}) &middot; Confirma lo que apostaste de tu bolsillo:`,
+          instruccion: 'Ingresa el monto que apostaste y perdiste ($ COP):',
+          placeholder: 'Ej: 20000',
+          valorDefault: valorSugerido,
+          atajos: [10000, 20000, 50000, 100000],
+          botonConfirmar: 'Confirmar Pérdida',
+          onConfirm: (valStr) => {
+            const perdidaReal = parseFloat(valStr.replace(/\./g, '').replace(/,/g, '')) || 0;
+            if (perdidaReal <= 0) return mostrarToast('Ingresa un monto válido mayor a 0.', 'warning');
+
+            const neto = -perdidaReal;
+            bankrollTotal = Math.max(0, bankrollTotal - perdidaReal);
+            deudaRecuperacion += perdidaReal;
+
+            const newMovId = Date.now();
+            movimientos.unshift({
+              id: newMovId,
+              code: code,
+              fecha: fechaStr,
+              tipo: 'Apuesta Perdida Betano',
+              categoria: 'perdida',
+              concepto: `${boleto.tipo} (Perdida #${code})`,
+              cuota: cuota,
+              invertido: perdidaReal,
+              retorno: 0,
+              neto: neto
+            });
+
+            const idxAct = apuestasActivas.findIndex(a => a.code === code);
+            if (idxAct !== -1) apuestasActivas.splice(idxAct, 1);
+
+            guardarEstado();
+            renderDashboard();
+            analizarLinkBetano();
+
+            const cuotaSug = 1.80;
+            const rescateSug = deudaRecuperacion / (cuotaSug - 1.0);
+
+            mostrarCelebracionModal({
+              tipo: 'perdida',
+              badge: '🔴 APUESTA PERDIDA REGISTRADA',
+              icon: '📉',
+              titulo: 'Resultado Registrado: Boleto Perdido',
+              subtitulo: `Boleto #${code} (@ ${cuota.toFixed(2)}) &middot; -${formatCOP(perdidaReal)}`,
+              metrics: [
+                { label: 'Pérdida Restada de Caja', valor: `-${formatCOP(perdidaReal)}`, color: '#ef4444', highlight: 'red' },
+                { label: 'Déficit Total Acumulado', valor: formatCOP(deudaRecuperacion), color: '#f59e0b', highlight: 'orange' },
+                { label: 'Bankroll Restante', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+              ],
+              notes: [
+                `🛡️ <strong>Plan de Rescate:</strong> Para recuperar tus <strong>${formatCOP(deudaRecuperacion)}</strong> (a cuota sugerida @${cuotaSug.toFixed(2)}), el sistema recomienda apostar <strong>${formatCOP(rescateSug)}</strong> (o en 2 pasos de ${formatCOP(rescateSug/2)}).`,
+                '💡 Si hubo un error en este importe, puedes deshacerlo o ajustar tu Bankroll con los botones inferiores.'
+              ],
+              botonTexto: 'Aceptar y Ver Rescate 🛡️',
+              botonesExtra: [
+                {
+                  texto: '↩️ Deshacer esta Pérdida',
+                  estilo: 'background: rgba(239, 68, 68, 0.2); border: 1.5px solid #ef4444; color: #fca5a5;',
+                  onClick: () => {
+                    cerrarProModal();
+                    eliminarMovimiento(newMovId);
+                  }
+                },
+                {
+                  texto: '💰 Ajustar Bankroll',
+                  estilo: 'background: rgba(56, 189, 248, 0.2); border: 1.5px solid #38bdf8; color: #38bdf8;',
+                  onClick: () => {
+                    cerrarProModal();
+                    ajustarBankrollModal();
+                  }
+                }
+              ]
+            });
+          }
         });
         return;
       }
@@ -3894,17 +3944,31 @@
     }
 
     function eliminarMovimiento(id) {
+      const mov = movimientos.find(m => m.id === id);
+      if (!mov) return;
+
       mostrarConfirmacionPro({
         badge: 'ELIMINAR MOVIMIENTO',
         icon: '🗑️',
         titulo: '¿Eliminar este registro?',
-        mensaje: '¿Deseas eliminar este movimiento de tu historial?',
-        botonConfirmar: 'Sí, Eliminar',
+        mensaje: `¿Deseas eliminar <strong>"${mov.concepto || mov.tipo}"</strong>?<br><br>• Si fue una pérdida o cobro erróneo, tus fondos se revertirán automáticamente en tu Bankroll y Déficit.`,
+        botonConfirmar: 'Sí, Eliminar y Revertir Saldo',
         botonCancelar: 'Cancelar',
         onConfirm: () => {
+          // Revertir impacto financiero del movimiento eliminado
+          if (mov.categoria === 'perdida' || (mov.neto && mov.neto < 0)) {
+            const perdida = Math.abs(mov.neto) || mov.invertido || 0;
+            bankrollTotal += perdida;
+            deudaRecuperacion = Math.max(0, deudaRecuperacion - perdida);
+          } else if (mov.categoria === 'ganada' || (mov.neto && mov.neto > 0)) {
+            bankrollTotal = Math.max(0, bankrollTotal - (mov.neto || 0));
+          }
+
           movimientos = movimientos.filter(m => m.id !== id);
           guardarEstado();
-          mostrarToast('Movimiento eliminado', 'info');
+          renderDashboard();
+          analizarLinkBetano();
+          mostrarToast('Movimiento eliminado y saldo restaurado con éxito.', 'success');
         }
       });
     }

@@ -249,8 +249,43 @@ def handle_message(msg):
     chat_id = msg.get("chat", {}).get("id")
     user_id = msg.get("from", {}).get("id")
     text = msg.get("text", "").strip()
+    photo = msg.get("photo")
 
-    if not text or not chat_id:
+    if not chat_id:
+        return
+
+    # Si el usuario envió una foto del boleto o captura de pantalla
+    if photo and not text:
+        caption = msg.get("caption", "").strip()
+        if caption:
+            text = caption
+        else:
+            msg_foto = (
+                "📸 *¡CAPTURA DE BOLETO RECIBIDA CON ÉXITO!*\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                "¿Cuál fue el resultado real de tu jugada en Betano?\n\n"
+                "Selecciona una opción para actualizar tu caja y bankroll:"
+            )
+            web_url = "https://contatotal03-ship-it.github.io/control-apuestas/"
+            reply_markup_foto = {
+                "inline_keyboard": [
+                    [
+                        {"text": "✅ ¡La Gané!", "callback_data": "help_gana"},
+                        {"text": "❌ ¡La Perdí!", "callback_data": "help_pierde"}
+                    ],
+                    [
+                        {"text": "💵 Salí Antes (Cash Out)", "callback_data": "help_cashout"},
+                        {"text": "⚪ Anulada / Reembolso", "callback_data": "help_anulada"}
+                    ],
+                    [
+                        {"text": "📱 Abrir en Calculadora Web (Escanear OCR)", "url": web_url}
+                    ]
+                ]
+            }
+            send_message(chat_id, msg_foto, reply_markup=reply_markup_foto)
+            return
+
+    if not text:
         return
 
     parts = text.split()
@@ -320,7 +355,23 @@ def handle_message(msg):
             f"📱 *Abrir en la Calculadora:* [Ver Boleto y Calcular en Pantalla Completa]({web_url})"
         ).replace(",", ".")
 
-        send_message(chat_id, msg_betano_link)
+        reply_markup_inline = {
+            "inline_keyboard": [
+                [
+                    {"text": "✅ ¡La Gané!", "callback_data": f"res_gana_{code}_{cuota}"},
+                    {"text": "❌ ¡La Perdí!", "callback_data": f"res_pierde_{code}"}
+                ],
+                [
+                    {"text": "💵 Cash Out", "callback_data": f"res_cashout_{code}"},
+                    {"text": "⚪ Anulada", "callback_data": f"res_anulada_{code}"}
+                ],
+                [
+                    {"text": "📱 Ver en Calculadora Web", "url": web_url}
+                ]
+            ]
+        }
+
+        send_message(chat_id, msg_betano_link, reply_markup=reply_markup_inline)
         conn.close()
         return
 
@@ -337,12 +388,15 @@ def handle_message(msg):
             "• `/stake [1-10]` &rarr; Cuánto apostar según tu Stake.\n"
             "• `/setbank [monto]` &rarr; Configurar tu capital (Ej: `/setbank 1000000`).\n"
             "• `/bankroll` &rarr; Ver tu capital actual.\n\n"
-            "📊 *REGISTRO DE APUESTAS Y BALANCE:*\n"
+            "📊 *REGISTRO DE APUESTAS (4 RESULTADOS):*\n"
             "• `/gana [monto] [cuota] [partido]` &rarr; Ganancia neta.\n"
-            "• `/pierde [monto] [partido]` &rarr; Registra pérdida.\n"
+            "• `/pierde [monto] [partido]` &rarr; Registra pérdida y activa rescate.\n"
+            "• `/cashout [apostado] [cobrado] [partido]` &rarr; Cierre anticipado.\n"
+            "• `/anulada [monto] [partido]` &rarr; Reembolso al 100% ($0 impacto).\n"
             "• `/gasto [monto] [canal]` &rarr; Compra de canal VIP.\n"
             "• `/balance` o `/mes` &rarr; Resumen financiero neto.\n"
             "• `/canales` &rarr; Accesos directos a tus canales VIP.\n\n"
+            "📸 *Envío de Fotos:* Envía la captura de tu boleto y el bot te dará los botones interactivos para registrarla en 1 toque.\n\n"
             "📱 *Calculadora Web en la Nube:* Abre la webapp con el botón inferior."
         )
         reply_markup = {
@@ -605,22 +659,119 @@ def handle_message(msg):
         except ValueError:
             send_message(chat_id, "⚠️ Error en monto. Ejemplo: `/pierde 15000 Partido`")
 
-    # /betano [monto] [cuota] [g/p] [partido] o texto copiado de betano
+    # /cashout [monto_apostado] [monto_cobrado] [partido]
+    elif cmd in ["/cashout", "/cierre", "/cerrar"]:
+        if len(parts) < 3:
+            send_message(chat_id, "⚠️ Uso incorrecto. Ejemplo: `/cashout 50000 70000 Real Madrid vs City`\n(Indica cuánto apostaste y cuánto te pagó Betano)")
+            conn.close()
+            return
+        try:
+            apostado = float(parts[1].replace("$", "").replace(".", ""))
+            cobrado = float(parts[2].replace("$", "").replace(".", ""))
+            concepto = " ".join(parts[3:]) if len(parts) > 3 else "Cash Out Betano"
+            neto = cobrado - apostado
+
+            cursor.execute(
+                "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (user_id, fecha_hoy, "apuesta_cashout", f"[Cash Out] {concepto}", apostado, cobrado, neto)
+            )
+            conn.commit()
+
+            delta_bank = neto
+            delta_debt = -neto if neto > 0 else abs(neto)
+            nuevo_bank, nueva_deuda = update_user_balance_and_debt(user_id, delta_bank, delta_debt)
+
+            icono = "🟡" if neto >= 0 else "🟠"
+            txt_neto = f"+${neto:,.0f} COP" if neto >= 0 else f"-${abs(neto):,.0f} COP"
+
+            msg_co = (
+                f"{icono} *Salida Anticipada / Cash Out Registrado*\n\n"
+                f"• Jugada: {concepto}\n"
+                f"• Apostado Inicial: $ {apostado:,.0f} COP\n"
+                f"• Betano te Pagó: $ {cobrado:,.0f} COP\n"
+                f"• Ganancia/Pérdida Neta: *{txt_neto}*\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💰 *Nuevo Bankroll:* ${nuevo_bank:,.0f} COP\n"
+                f"📊 *Déficit Pendiente:* ${nueva_deuda:,.0f} COP"
+            ).replace(",", ".")
+            send_message(chat_id, msg_co)
+        except ValueError:
+            send_message(chat_id, "⚠️ Error en números. Ejemplo: `/cashout 50000 70000 Partido`")
+
+    # /anulada [monto] [partido]
+    elif cmd in ["/anulada", "/anular", "/push", "/reembolso"]:
+        if len(parts) < 2:
+            send_message(chat_id, "⚠️ Uso incorrecto. Ejemplo: `/anulada 20000 Partido Cancelado`")
+            conn.close()
+            return
+        try:
+            monto = float(parts[1].replace("$", "").replace(".", ""))
+            concepto = " ".join(parts[2:]) if len(parts) > 2 else "Apuesta Anulada (Push)"
+
+            cursor.execute(
+                "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (user_id, fecha_hoy, "apuesta_anulada", f"[Anulada] {concepto}", monto, monto, 0)
+            )
+            conn.commit()
+
+            bank = get_user_bankroll(user_id)
+            deuda = get_user_debt(user_id)
+
+            msg_an = (
+                "⚪ *Apuesta Anulada / Reembolsada (Push)*\n\n"
+                f"• Jugada: {concepto}\n"
+                f"• Reembolso Íntegro: $ {monto:,.0f} COP\n"
+                "• Impacto en Bankroll: *+$0 COP (Sin pérdidas ni ganancias)*\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💰 *Bankroll en Caja:* ${bank:,.0f} COP\n"
+                f"📊 *Déficit Pendiente:* ${deuda:,.0f} COP"
+            ).replace(",", ".")
+            send_message(chat_id, msg_an)
+        except ValueError:
+            send_message(chat_id, "⚠️ Error en monto. Ejemplo: `/anulada 20000 Partido`")
+
+    # /betano [monto] [cuota] [g/p/c/a] [partido]
     elif cmd == "/betano":
         if len(parts) < 2:
-            send_message(chat_id, "🔥 *Registro Rápido Betano:*\n\n`/betano [monto] [cuota] [g/p] [partido]`\n_Ejemplo:_ `/betano 80000 1.85 g Real Madrid vs City`\n_O perdida:_ `/betano 50000 2.10 p PSG Gana`")
+            send_message(chat_id, "🔥 *Registro Rápido Betano:*\n\n`/betano [monto] [cuota] [g/p/c/a] [partido]`\n_Ganada:_ `/betano 80000 1.85 g Real Madrid`\n_Perdida:_ `/betano 50000 2.10 p PSG Gana`\n_Cash Out:_ `/betano 50000 70000 c Liverpool`\n_Anulada:_ `/betano 30000 1.90 a Bayern`")
             conn.close()
             return
         try:
             monto = float(parts[1].replace("$", "").replace(".", ""))
             cuota = float(parts[2].replace(",", ".")) if len(parts) > 2 else 1.80
             res_flag = parts[3].lower() if len(parts) > 3 else "g"
-            es_ganada = res_flag in ["g", "gana", "ganada", "win"]
             concepto = " ".join(parts[4:]) if len(parts) > 4 else "Apuesta Betano"
 
-            retorno = monto * cuota if es_ganada else 0.0
-            neto = (retorno - monto) if es_ganada else -monto
-            tipo_mov = "apuesta_ganada" if es_ganada else "apuesta_perdida"
+            if res_flag in ["g", "gana", "ganada", "win"]:
+                retorno = monto * cuota
+                neto = retorno - monto
+                tipo_mov = "apuesta_ganada"
+                delta_bank, delta_debt = neto, -monto
+                icono, txt_res = "🟢", "GANADA"
+                det = f"• Cobro: ${retorno:,.0f} COP\n• Ganancia Neta: *+${neto:,.0f} COP*"
+            elif res_flag in ["p", "pierde", "perdida", "loss"]:
+                retorno = 0.0
+                neto = -monto
+                tipo_mov = "apuesta_perdida"
+                delta_bank, delta_debt = -monto, monto
+                icono, txt_res = "🔴", "PERDIDA"
+                det = f"• Pérdida: *-${monto:,.0f} COP*\n\n💡 _Para recuperar escribe:_ `/recuperar {int(monto)} {cuota:.2f}`"
+            elif res_flag in ["c", "cash", "cashout"]:
+                cobro_co = cuota  # En cashout el segundo argumento es el cobro
+                neto = cobro_co - monto
+                tipo_mov = "apuesta_cashout"
+                delta_bank = neto
+                delta_debt = -neto if neto > 0 else abs(neto)
+                icono, txt_res = "🟡", "CASH OUT"
+                txt_co = f"+${neto:,.0f} COP" if neto >= 0 else f"-${abs(neto):,.0f} COP"
+                det = f"• Cobro Cash Out: ${cobro_co:,.0f} COP\n• Ganancia/Pérdida Neta: *{txt_co}*"
+            else:  # 'a' / anulada
+                retorno = monto
+                neto = 0.0
+                tipo_mov = "apuesta_anulada"
+                delta_bank, delta_debt = 0, 0
+                icono, txt_res = "⚪", "ANULADA (PUSH)"
+                det = f"• Reembolso: ${monto:,.0f} COP devueltos al 100%"
 
             cursor.execute(
                 "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -628,23 +779,12 @@ def handle_message(msg):
             )
             conn.commit()
 
-            delta_bank = neto if es_ganada else -monto
-            delta_debt = -monto if es_ganada else monto
             nuevo_bank, nueva_deuda = update_user_balance_and_debt(user_id, delta_bank, delta_debt)
-
-            icono = "🟢" if es_ganada else "🔴"
-            txt_res = "GANADA" if es_ganada else "PERDIDA"
-
-            if es_ganada:
-                det = f"• Cobro: ${retorno:,.0f} COP\n• Ganancia Neta: *+${neto:,.0f} COP*"
-            else:
-                sug_rescate = nueva_deuda / (cuota - 1.0) if cuota > 1.0 else nueva_deuda
-                det = f"• Pérdida: *-${monto:,.0f} COP*\n\n💡 _Para recuperar escribe:_ `/recuperar {int(nueva_deuda)} {cuota:.2f}`"
 
             msg_b = (
                 f"{icono} *Apuesta de Betano Registrada ({txt_res})*\n\n"
                 f"• Partido: {concepto}\n"
-                f"• Apostado: ${monto:,.0f} COP @ {cuota:.2f}\n"
+                f"• Apostado: ${monto:,.0f} COP\n"
                 f"{det}\n"
                 "━━━━━━━━━━━━━━━━━━━━━\n"
                 f"💰 *Bankroll Actual:* ${nuevo_bank:,.0f} COP\n"
@@ -667,12 +807,11 @@ def handle_message(msg):
             tipo, invertido, retorno, neto = r
             if tipo == "gasto_canal":
                 total_canales += invertido
-            elif tipo == "apuesta_ganada":
+            elif tipo in ["apuesta_ganada", "apuesta_perdida", "apuesta_cashout"]:
                 total_apostado += invertido
                 ganancia_apuestas += neto
-            elif tipo == "apuesta_perdida":
+            elif tipo == "apuesta_anulada":
                 total_apostado += invertido
-                ganancia_apuestas += neto
                 
         balance_neto_real = ganancia_apuestas - total_canales
         icono_balance = "🟢" if balance_neto_real >= 0 else "🔴"
@@ -682,7 +821,7 @@ def handle_message(msg):
             "━━━━━━━━━━━━━━━━━━━━━\n"
             f"💳 *Gastado en Canales VIP:* $ {total_canales:,.0f} COP\n"
             f"🎲 *Total Apostado:* $ {total_apostado:,.0f} COP\n"
-            f"🎯 *Beneficio en Apuestas:* {format_cop(ganancia_apuestas)}\n"
+            f"🎯 *Beneficio Neto en Apuestas:* {format_cop(ganancia_apuestas)}\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
             f"{icono_balance} *BALANCE NETO TOTAL:* *{format_cop(balance_neto_real)}*\n\n"
             f"_{ '¡Vas ganando este mes! 🚀' if balance_neto_real >= 0 else 'Vas en negativo, controla el bankroll ⚠️' }_"
@@ -691,10 +830,49 @@ def handle_message(msg):
         
     conn.close()
 
+# Manejador de botones interactivos de Telegram (Callback Queries)
+def handle_callback_query(cq):
+    cq_id = cq.get("id")
+    data = cq.get("data", "")
+    msg = cq.get("message", {})
+    chat_id = msg.get("chat", {}).get("id")
+
+    # Responder a Telegram para apagar el relojito
+    send_telegram_request("answerCallbackQuery", {"callback_query_id": cq_id})
+
+    if not chat_id:
+        return
+
+    if data.startswith("help_"):
+        tipo = data.replace("help_", "")
+        if tipo == "gana":
+            send_message(chat_id, "🟢 *Para registrar como GANADA:*\nEscribe: `/gana [apostado] [cuota] [partido]`\n_Ejemplo:_ `/gana 20000 1.85 Real Madrid`")
+        elif tipo == "pierde":
+            send_message(chat_id, "🔴 *Para registrar como PERDIDA:*\nEscribe: `/pierde [monto] [partido]`\n_Ejemplo:_ `/pierde 20000 Real Madrid`\n\n🛡️ _El bot calculará automáticamente tu rescate de recuperación._")
+        elif tipo == "cashout":
+            send_message(chat_id, "🟡 *Para registrar como SALÍ ANTES (Cash Out):*\nEscribe: `/cashout [apostado] [cobrado] [partido]`\n_Ejemplo:_ `/cashout 20000 28000 Real Madrid`")
+        elif tipo == "anulada":
+            send_message(chat_id, "⚪ *Para registrar como ANULADA (Reembolso):*\nEscribe: `/anulada [monto] [partido]`\n_Ejemplo:_ `/anulada 20000 Partido cancelado`")
+
+    elif data.startswith("res_"):
+        parts = data.split("_")
+        accion = parts[1]
+        code = parts[2] if len(parts) > 2 else "BETANO"
+        cuota_str = parts[3] if len(parts) > 3 else "1.80"
+
+        if accion == "gana":
+            send_message(chat_id, f"🟢 *Boleto #{code} GANADO*\nIndica cuánto apostaste con el comando:\n`/gana [monto] {cuota_str} Boleto #{code}`\n_Ejemplo:_ `/gana 20000 {cuota_str} Boleto #{code}`")
+        elif accion == "pierde":
+            send_message(chat_id, f"🔴 *Boleto #{code} PERDIDO*\nRegistra el importe perdido para activar la recuperación:\n`/pierde [monto] Boleto #{code}`\n_Ejemplo:_ `/pierde 20000 Boleto #{code}`")
+        elif accion == "cashout":
+            send_message(chat_id, f"🟡 *Boleto #{code} CASH OUT (Salida Anticipada)*\nIndica cuánto apostaste y cuánto te pagó Betano:\n`/cashout [apostado] [cobrado] Boleto #{code}`\n_Ejemplo:_ `/cashout 20000 28000 Boleto #{code}`")
+        elif accion == "anulada":
+            send_message(chat_id, f"⚪ *Boleto #{code} ANULADO (Reembolso)*\nRegistra el reintegro a tu caja:\n`/anulada [monto] Boleto #{code}`\n_Ejemplo:_ `/anulada 20000 Boleto #{code}`")
+
 # Bucle principal de polling
 def run_bot():
     init_db()
-    print("🤖 Robot de Telegram iniciando con soporte para Recuperación y Bankroll...")
+    print("🤖 Robot de Telegram iniciando con soporte para Recuperación, Fotos y 4 Resultados...")
     last_update_id = 0
     while True:
         try:
@@ -704,6 +882,8 @@ def run_bot():
                     last_update_id = u["update_id"]
                     if "message" in u:
                         handle_message(u["message"])
+                    elif "callback_query" in u:
+                        handle_callback_query(u["callback_query"])
         except Exception as e:
             print(f"Error en loop: {e}")
 

@@ -1462,6 +1462,65 @@
       overlay.classList.add('active');
     }
 
+    function mostrarModalInputPro(config) {
+      const overlay = document.getElementById('proModalOverlay');
+      const card = document.getElementById('proModalCard');
+      const badgeWrap = document.querySelector('.pro-badge-wrap');
+      const badge = document.getElementById('proModalBadge');
+      const badgeText = document.getElementById('proModalBadgeText');
+      const icon = document.getElementById('proModalIcon');
+      const title = document.getElementById('proModalTitle');
+      const subtitle = document.getElementById('proModalSubtitle');
+      const grid = document.getElementById('proModalGrid');
+      const notes = document.getElementById('proModalNotes');
+      const actions = document.getElementById('proModalActions');
+
+      card.className = 'pro-modal-card tipo-cashout';
+      badgeWrap.style.display = 'flex';
+      badgeText.innerText = config.badge || 'INGRESO DE VALOR';
+      badge.style.background = 'rgba(245, 158, 11, 0.15)';
+      badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+      badge.style.color = '#fbbf24';
+
+      icon.innerText = config.icon || '💵';
+      title.innerHTML = config.titulo || 'Monto de Cierre Anticipado';
+      subtitle.innerHTML = config.subtitulo || '';
+      grid.style.display = 'none';
+      grid.innerHTML = '';
+
+      notes.style.display = 'block';
+      notes.innerHTML = `
+        <div style="margin-bottom: 0.65rem; color: #cbd5e1; font-size: 0.82rem;">
+          ${config.instruccion || 'Ingresa el valor exacto recibido de Betano ($ COP):'}
+        </div>
+        <div style="position: relative;">
+          <input type="number" id="proModalInputVal" value="${config.valorDefault || ''}" placeholder="${config.placeholder || 'Ej: 35000'}" style="width: 100%; padding: 0.8rem 1rem; font-size: 1.15rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.55); border: 1.5px solid #f59e0b; border-radius: 0.65rem; color: #fff; outline: none; box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);">
+        </div>
+      `;
+
+      modalCallbackConfirm = () => {
+        const inp = document.getElementById('proModalInputVal');
+        const val = inp ? inp.value.trim() : '';
+        if (config.onConfirm) config.onConfirm(val);
+      };
+      modalCallbackCancel = config.onCancel || null;
+
+      actions.innerHTML = `
+        <button type="button" class="pro-btn-secondary" onclick="cerrarProModal()">
+          ${config.botonCancelar || 'Cancelar'}
+        </button>
+        <button type="button" class="pro-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);" onclick="ejecutarAccionModalConfirm()">
+          <span>${config.botonConfirmar || 'Confirmar y Guardar'} 🚀</span>
+        </button>
+      `;
+
+      overlay.classList.add('active');
+      setTimeout(() => {
+        const inp = document.getElementById('proModalInputVal');
+        if (inp) { inp.focus(); inp.select(); }
+      }, 100);
+    }
+
     function mostrarModalProSimple(config) {
       mostrarCelebracionModal({
         tipo: config.tipo || 'info',
@@ -1824,27 +1883,20 @@
 
       const beneficioNeto = (montoGanancia > montoApostado) ? (montoGanancia - montoApostado) : 0;
 
-      // 4. Detectar Estado (Ganada, Perdida, En Juego, Cash Out)
+      // 4. Detectar Estado real de la jugada sin falsos positivos de "ganancias potenciales"
       let estado = 'en_juego';
-      let estadoLabel = 'En Juego';
+      let estadoLabel = 'En Juego / Por Definir';
 
-      if (
-        /ganad[ao]s?|acertad[ao]s?|ganador[ao]?|victori[ao]|cobrad[ao]/i.test(rawText) ||
-        textLower.includes('ganada') ||
-        textLower.includes('ganancias') ||
-        rawText.includes('✓') || rawText.includes('✔') || rawText.includes('✅') ||
-        /marcador\s*\d+-\d+/i.test(rawText) ||
-        (montoGanancia > 0 && montoGanancia > montoApostado)
-      ) {
+      if (/\b(?:acertad[ao]s?|ganador[ao]?|victori[ao]|cobrad[ao])\b/i.test(rawText) || /\bganada\b/i.test(rawText) || rawText.includes('✓') || rawText.includes('✔') || rawText.includes('✅')) {
         estado = 'Ganada';
         estadoLabel = 'Ganada ✅';
-      } else if (/perdid[ao]s?|fallad[ao]s?|no\s*ganador/i.test(rawText)) {
+      } else if (/\b(?:perdid[ao]s?|fallad[ao]s?|no\s*ganador)\b/i.test(rawText) || rawText.includes('❌')) {
         estado = 'Perdida';
         estadoLabel = 'Perdida ❌';
-      } else if (/cash\s*out|cierre/i.test(rawText)) {
+      } else if (/\b(?:cash\s*out|cierre\s*anticipado)\b/i.test(rawText)) {
         estado = 'Cashout';
         estadoLabel = 'Cash Out 💵';
-      } else if (/anulad[ao]s?|cancelad[ao]s?|reembols/i.test(rawText)) {
+      } else if (/\b(?:anulad[ao]s?|cancelad[ao]s?|reembols(?:o|ado))\b/i.test(rawText)) {
         estado = 'Anulada';
         estadoLabel = 'Anulada ⚪';
       }
@@ -1859,38 +1911,42 @@
 
       BETANO_DATABASE[code] = {
         code: code,
-        tipo: `${tipoBoleto} (${estadoLabel})`,
+        tipo: `${tipoBoleto}`,
         cuota: cuota,
-        montoApostado: montoApostado || 122453,
-        gananciaTotal: montoGanancia || 217966,
-        beneficioLimpio: beneficioNeto || (montoGanancia - montoApostado),
+        montoApostado: montoApostado || 20000,
+        gananciaTotal: montoGanancia || Math.round((montoApostado || 20000) * cuota),
+        beneficioLimpio: beneficioNeto || Math.round((montoApostado || 20000) * (cuota - 1)),
         estado: estado,
+        esCapturaImagen: true,
         partidos: [
           {
             evento: `⚽ ${partidoDetectado}`,
-            pick: `${pickDetectado} ${estado === 'Ganada' && !pickDetectado.includes('✅') ? '✅' : ''}`,
+            pick: `${pickDetectado}`,
             mercado: mercadoDetectado,
             odds: cuota,
-            color: estado === 'Ganada' ? '#10b981' : (estado === 'Perdida' ? '#ef4444' : '#ff5e00')
+            color: '#ff5e00'
           }
         ],
-        cashoutNote: estado === 'Ganada'
-          ? `🎉 ¡Boleto GANADO detectado por IA OCR! Apostaste: ${formatCOP(montoApostado)} @ ${cuota.toFixed(2)}. Ganancia total: ${formatCOP(montoGanancia)} (Beneficio neto: +${formatCOP(beneficioNeto)}).`
-          : `Boleto detectado de la captura de pantalla con cuota @ ${cuota.toFixed(2)}.`
+        cashoutNote: `Boleto escaneado con cuota @ ${cuota.toFixed(2)}. Selecciona si Ganó, Perdió, Saliste antes (Cash Out) o Anulada.`
       };
 
       // Cargar en el input y disparar análisis
       document.getElementById('betanoLinkInput').value = code;
       analizarLinkBetano();
 
-      // Notificación de éxito
+      // Notificación de éxito con selector explícito de estado
       const feedbackEl = document.getElementById('betanoStatusFeedback');
       if (feedbackEl) {
         feedbackEl.innerHTML = `
-          <div style="background: rgba(16, 185, 129, 0.2); border: 1.5px solid #10b981; border-radius: 0.65rem; padding: 0.65rem 0.85rem; margin-top: 0.35rem; color: #34d399; font-size: 0.82rem; line-height: 1.45;">
-            <strong>📸 ¡Captura de Betano Escaneada con Éxito!</strong><br>
-            • Estado: <strong>${estadoLabel}</strong> &bull; Cuota: <strong>@ ${cuota.toFixed(2)}</strong><br>
-            • Invertido: <strong>${formatCOP(montoApostado)}</strong> &bull; Cobro: <strong>${formatCOP(montoGanancia)}</strong> &bull; Ganancia Limpia: <strong style="color: #fff;">+${formatCOP(beneficioNeto)}</strong>
+          <div style="background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; border-radius: 0.65rem; padding: 0.75rem 0.95rem; margin-top: 0.45rem; color: #f8fafc; font-size: 0.83rem; line-height: 1.45;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
+              <strong style="color: #38bdf8;">📸 ¡Captura de Betano Escaneada!</strong>
+              <span style="font-size: 0.72rem; color: #94a3b8;">Cuota: <strong style="color: #ff5e00;">@ ${cuota.toFixed(2)}</strong></span>
+            </div>
+            <div>Apostado: <strong>${formatCOP(montoApostado || 20000)}</strong> &bull; Retorno potencial: <strong>${formatCOP(montoGanancia || Math.round((montoApostado || 20000) * cuota))}</strong></div>
+            <div style="font-size: 0.75rem; color: #fbbf24; margin-top: 0.35rem;">
+              👇 <strong>¿Cómo terminó tu jugada?</strong> Usa el panel inferior para elegir si <strong>Ganó ✅, Perdió ❌, Saliste antes (Cash Out) 💵 o Anuló ⚪</strong>.
+            </div>
           </div>
         `;
       }
@@ -1982,45 +2038,73 @@
 
       renderPartidosBoleto(boleto.partidos);
 
-      // Banner para boletos resueltos/ganados en Betano
+      // Panel de Resolución de Jugada / Captura Betano (Ganada, Perdida, Cash Out, Anulada, En Juego)
       const boxResolucion = document.getElementById('boxResolucionBoleto');
       if (boxResolucion) {
-        if (boleto.estado === 'Ganada' || boleto.gananciaTotal) {
-          const yaAplicado = movimientos.some(m => m.code === code || (m.concepto && m.concepto.includes(code)));
-          const apostado = boleto.montoApostado || 122453;
-          const cobro = boleto.gananciaTotal || 217966;
-          const neto = boleto.beneficioLimpio || (cobro - apostado);
+        const yaAplicado = movimientos.find(m => m.code === code || (m.concepto && m.concepto.includes(code)));
+        const apostado = boleto.montoApostado || parseFloat(document.getElementById('dynMontoManual').value) || 20000;
+        const cobro = boleto.gananciaTotal || Math.round(apostado * cuotaBoleto);
+        const neto = (cobro > apostado) ? (cobro - apostado) : Math.round(apostado * (cuotaBoleto - 1));
 
-          if (yaAplicado) {
-            boxResolucion.innerHTML = `
-              <div style="background: rgba(16, 185, 129, 0.12); border: 1.5px solid #10b981; border-radius: 0.75rem; padding: 0.85rem 1rem; margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem;">
-                <div>
-                  <div style="color: #34d399; font-weight: 800; font-size: 0.95rem;">✅ ¡Ganancia de este Boleto Ya Aplicada al Bankroll!</div>
-                  <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 0.15rem;">Apostado: ${formatCOP(apostado)} &bull; Cobrado: ${formatCOP(cobro)} &bull; Ganancia limpia sumada: <strong style="color: #34d399;">+${formatCOP(neto)}</strong></div>
+        if (yaAplicado) {
+          const colorBadge = yaAplicado.categoria === 'ganada' ? '#10b981' : (yaAplicado.categoria === 'perdida' ? '#ef4444' : '#f59e0b');
+          const netoTxt = yaAplicado.neto >= 0 ? `+${formatCOP(yaAplicado.neto)}` : formatCOP(yaAplicado.neto);
+          boxResolucion.innerHTML = `
+            <div style="background: rgba(15, 23, 42, 0.95); border: 1.5px solid ${colorBadge}; border-radius: 0.85rem; padding: 0.95rem 1.15rem; margin-bottom: 0.85rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; box-shadow: 0 4px 18px rgba(0,0,0,0.35);">
+              <div>
+                <div style="color: ${colorBadge}; font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>📋</span> Jugada #${code} Registrada en Historial (${yaAplicado.tipo || 'Auditada'})
                 </div>
-                <span class="box-badge" style="background: #10b981; color: #fff; font-size: 0.75rem; padding: 0.35rem 0.75rem;">Registrada en Historial</span>
+                <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 0.2rem;">
+                  Apostado: <strong>${formatCOP(yaAplicado.invertido)}</strong> &bull; Retorno: <strong>${formatCOP(yaAplicado.retorno)}</strong> &bull; Impacto Neto: <strong style="color: ${colorBadge};">${netoTxt}</strong>
+                </div>
               </div>
-            `;
-          } else {
-            boxResolucion.innerHTML = `
-              <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 95, 70, 0.35)); border: 2px solid #10b981; border-radius: 0.85rem; padding: 1rem 1.15rem; margin-bottom: 0.85rem; box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-                <div>
-                  <div style="color: #34d399; font-weight: 900; font-size: 1.05rem; display: flex; align-items: center; gap: 0.4rem;">
-                    <span>🎉</span> ¡BOLETO RESUELTO GANADO EN BETANO!
-                  </div>
-                  <div style="font-size: 0.82rem; color: #f1f5f9; margin-top: 0.3rem; line-height: 1.4;">
-                    Apostaste: <strong>${formatCOP(apostado)}</strong> &bull; Betano pagó: <strong>${formatCOP(cobro)}</strong><br>
-                    Ganancia Limpia Neta: <strong style="color: #34d399; font-size: 0.95rem;">+${formatCOP(neto)}</strong>
-                  </div>
-                </div>
-                <button type="button" style="background: #10b981; color: #fff; font-weight: 900; font-size: 0.88rem; padding: 0.75rem 1.35rem; border-radius: 0.6rem; cursor: pointer; box-shadow: 0 4px 14px rgba(16,185,129,0.5); border: none; display: inline-flex; align-items: center; gap: 0.4rem;" onclick="aplicarGananciaBoletoDirecto('${code}')">
-                  <span>💰</span> Aplicar y Sumar al Bankroll (+ ${formatCOP(neto)})
+              <div style="display: flex; gap: 0.45rem;">
+                <button type="button" class="btn btn-outline" style="font-size: 0.74rem; padding: 0.4rem 0.75rem; border-color: rgba(255,255,255,0.2);" onclick="reabrirResolucionBoleto('${code}')">
+                  <span>🔄</span> Cambiar Resultado
                 </button>
               </div>
-            `;
-          }
+            </div>
+          `;
         } else {
-          boxResolucion.innerHTML = '';
+          boxResolucion.innerHTML = `
+            <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(8, 14, 26, 0.98)); border: 1.5px solid rgba(56, 189, 248, 0.4); border-radius: 0.85rem; padding: 1rem 1.15rem; margin-bottom: 0.95rem; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem;">
+                <div style="display: flex; align-items: center; gap: 0.45rem;">
+                  <span style="font-size: 1.25rem;">🎟️</span>
+                  <div>
+                    <strong style="color: #f8fafc; font-size: 0.96rem;">Control de Resultado de este Boleto Betano</strong>
+                    <div style="font-size: 0.72rem; color: #94a3b8;">#${code} &bull; Cuota Oficial: <strong style="color: #ff5e00;">@ ${cuotaBoleto.toFixed(2)}</strong></div>
+                  </div>
+                </div>
+                <div style="font-size: 0.76rem; color: #cbd5e1; background: rgba(0,0,0,0.4); padding: 0.35rem 0.65rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.08);">
+                  Apostado sugerido: <strong style="color: #fff; font-family: monospace;">${formatCOP(apostado)}</strong> &bull; Cobro potencial: <strong style="color: #34d399; font-family: monospace;">${formatCOP(cobro)}</strong>
+                </div>
+              </div>
+
+              <div style="font-size: 0.8rem; color: #cbd5e1; margin-bottom: 0.85rem; line-height: 1.45;">
+                ¿Cuál fue el resultado real de este boleto en Betano? Elige cómo terminó para sincronizar tu caja de inmediato:
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.5rem;">
+                <button type="button" class="btn" style="background: #10b981; color: #fff; font-weight: 800; font-size: 0.82rem; padding: 0.75rem 0.5rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem; box-shadow: 0 4px 12px rgba(16,185,129,0.35);" onclick="resolverBoletoDirecto('${code}', 'ganada')">
+                  <span>✅</span> ¡La Gané!
+                </button>
+                <button type="button" class="btn" style="background: #ef4444; color: #fff; font-weight: 800; font-size: 0.82rem; padding: 0.75rem 0.5rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem; box-shadow: 0 4px 12px rgba(239,68,68,0.35);" onclick="resolverBoletoDirecto('${code}', 'perdida')">
+                  <span>❌</span> ¡La Perdí!
+                </button>
+                <button type="button" class="btn" style="background: #f59e0b; color: #000; font-weight: 800; font-size: 0.82rem; padding: 0.75rem 0.5rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem; box-shadow: 0 4px 12px rgba(245,158,11,0.35);" onclick="resolverBoletoDirecto('${code}', 'cashout')">
+                  <span>💵</span> Salí Antes (Cash Out)
+                </button>
+                <button type="button" class="btn btn-outline" style="font-weight: 700; font-size: 0.82rem; padding: 0.75rem 0.5rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;" onclick="resolverBoletoDirecto('${code}', 'anulada')">
+                  <span>⚪</span> Anulada / Reembolso
+                </button>
+                <button type="button" class="btn btn-outline" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 700; font-size: 0.82rem; padding: 0.75rem 0.5rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; gap: 0.35rem;" onclick="resolverBoletoDirecto('${code}', 'en_juego')">
+                  <span>📌</span> Aún en Juego
+                </button>
+              </div>
+            </div>
+          `;
         }
       }
 
@@ -2028,64 +2112,243 @@
       calcularEnVivo();
     }
 
-    function aplicarGananciaBoletoDirecto(code) {
-      const boleto = BETANO_DATABASE[code];
-      if (!boleto) return;
-
-      const apostado = boleto.montoApostado || 122453;
-      const cobro = boleto.gananciaTotal || 217966;
-      const neto = boleto.beneficioLimpio || (cobro - apostado);
-
-      // Si el bankroll actual está en el saldo previo a la apuesta ($122.453 o similar), ajustarlo al cobro total $217.966
-      // De lo contrario, sumarle la ganancia limpia (neto)
-      if (bankrollTotal <= apostado) {
-        bankrollTotal = cobro;
-      } else {
-        bankrollTotal += neto;
+    function reabrirResolucionBoleto(code) {
+      const idx = movimientos.findIndex(m => m.code === code || (m.concepto && m.concepto.includes(code)));
+      if (idx !== -1) {
+        const mov = movimientos[idx];
+        if (mov.categoria === 'ganada') {
+          bankrollTotal = Math.max(0, bankrollTotal - (mov.neto || 0));
+        } else if (mov.categoria === 'perdida') {
+          bankrollTotal += (mov.invertido || 0);
+          deudaRecuperacion = Math.max(0, deudaRecuperacion - (mov.invertido || 0));
+        } else if (mov.tipo && mov.tipo.includes('Cash Out')) {
+          bankrollTotal = Math.max(0, bankrollTotal - (mov.neto || 0));
+        }
+        movimientos.splice(idx, 1);
+        guardarEstado();
+        renderDashboard();
+        analizarLinkBetano();
+        mostrarToast(`Boleto #${code} re-abierto para registrar nuevo resultado.`, 'info');
       }
+    }
 
-      // Agregar movimiento al historial
-      movimientos.unshift({
-        id: Date.now(),
+    function resolverBoletoDirecto(code, accion) {
+      const boleto = BETANO_DATABASE[code] || {
         code: code,
-        fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
-        tipo: 'Apuesta Ganada Betano',
-        categoria: 'ganada',
-        concepto: `${boleto.tipo}: Besiktas Más 1.5 ✅ (#${code})`,
-        cuota: boleto.cuota,
-        invertido: apostado,
-        retorno: cobro,
-        neto: neto
-      });
+        tipo: `Boleto #${code}`,
+        cuota: parseFloat(document.getElementById('dynCuota').value) || 1.80,
+        montoApostado: parseFloat(document.getElementById('dynMontoManual').value) || 20000,
+        gananciaTotal: 0,
+        partidos: []
+      };
 
-      // Si había deuda registrada, reducirla
-      if (deudaRecuperacion > 0) {
-        deudaRecuperacion = Math.max(0, deudaRecuperacion - neto);
+      const cuota = boleto.cuota || parseFloat(document.getElementById('dynCuota').value) || 1.80;
+      const apostado = boleto.montoApostado || parseFloat(document.getElementById('dynMontoManual').value) || 20000;
+      const fechaStr = new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+
+      if (accion === 'en_juego') {
+        guardarApuestaActiva();
+        mostrarToast(`Boleto #${code} guardado en Apuestas en Juego`, 'info');
+        return;
       }
 
-      guardarEstado();
-      renderDashboard();
-      analizarLinkBetano();
+      if (accion === 'anulada') {
+        movimientos.unshift({
+          id: Date.now(),
+          code: code,
+          fecha: fechaStr,
+          tipo: 'Apuesta Anulada (Push)',
+          categoria: 'anulada',
+          concepto: `${boleto.tipo} (Reembolso Betano #${code})`,
+          cuota: cuota,
+          invertido: apostado,
+          retorno: apostado,
+          neto: 0
+        });
 
-      mostrarCelebracionModal({
-        tipo: 'ganada',
-        badge: '🏆 ¡VICTORIA CONFIRMADA!',
-        icon: '🎉',
-        titulo: '¡GANANCIA APLICADA AL BANKROLL!',
-        subtitulo: `Boleto Oficial de Betano #${code} Procesado &middot; Besiktas vs Crystal Palace (+1.5 Goles)`,
-        metrics: [
-          { label: 'Invertido en Betano', valor: formatCOP(apostado), color: '#94a3b8' },
-          { label: 'Cobrado de Betano', valor: formatCOP(cobro), color: '#38bdf8' },
-          { label: 'Beneficio Limpio Sumado', valor: `+${formatCOP(neto)}`, color: '#10b981', highlight: 'green' },
-          { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
-        ],
-        notes: [
-          '⚡ <strong>Win Rate:</strong> Tu efectividad se actualizó al <strong>100%</strong>.',
-          '📋 <strong>Historial:</strong> Movimiento financiero guardado y auditado.',
-          '🏦 <strong>Caja Real:</strong> Saldo disponible listo para tu siguiente jugada inteligente.'
-        ],
-        botonTexto: '¡Excelente, Continuar! 🚀'
-      });
+        const idxAct = apuestasActivas.findIndex(a => a.code === code);
+        if (idxAct !== -1) apuestasActivas.splice(idxAct, 1);
+
+        guardarEstado();
+        renderDashboard();
+        analizarLinkBetano();
+
+        mostrarModalProSimple({
+          badge: '⚪ REEMBOLSO COMPLETO',
+          icon: '🛡️',
+          tipo: 'info',
+          titulo: 'Boleto Anulado / Reembolsado',
+          subtitulo: `Boleto #${code} de Betano cancelado con $0 impacto financiero`,
+          notes: [
+            `• Tu dinero de <strong>${formatCOP(apostado)}</strong> regresó a tu caja al 100%.`,
+            '• Tu saldo en Bankroll no sufrió ninguna alteración ni pérdida.'
+          ],
+          botonTexto: 'Entendido'
+        });
+        return;
+      }
+
+      if (accion === 'perdida') {
+        const neto = -apostado;
+        bankrollTotal = Math.max(0, bankrollTotal - apostado);
+        deudaRecuperacion += apostado;
+
+        movimientos.unshift({
+          id: Date.now(),
+          code: code,
+          fecha: fechaStr,
+          tipo: 'Apuesta Perdida Betano',
+          categoria: 'perdida',
+          concepto: `${boleto.tipo} (Perdida #${code})`,
+          cuota: cuota,
+          invertido: apostado,
+          retorno: 0,
+          neto: neto
+        });
+
+        const idxAct = apuestasActivas.findIndex(a => a.code === code);
+        if (idxAct !== -1) apuestasActivas.splice(idxAct, 1);
+
+        guardarEstado();
+        renderDashboard();
+        analizarLinkBetano();
+
+        const cuotaSug = 1.80;
+        const rescateSug = deudaRecuperacion / (cuotaSug - 1.0);
+
+        mostrarCelebracionModal({
+          tipo: 'perdida',
+          badge: '🔴 APUESTA PERDIDA REGISTRADA',
+          icon: '📉',
+          titulo: 'Resultado Registrado: Boleto Perdido',
+          subtitulo: `Boleto #${code} (@ ${cuota.toFixed(2)}) &middot; -${formatCOP(apostado)}`,
+          metrics: [
+            { label: 'Pérdida Restada de Caja', valor: `-${formatCOP(apostado)}`, color: '#ef4444', highlight: 'red' },
+            { label: 'Déficit Total Acumulado', valor: formatCOP(deudaRecuperacion), color: '#f59e0b', highlight: 'orange' },
+            { label: 'Bankroll Restante', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+          ],
+          notes: [
+            `🛡️ <strong>Plan de Rescate Activado:</strong> Para recuperar tus <strong>${formatCOP(deudaRecuperacion)}</strong> en la siguiente jugada (a cuota sugerida @${cuotaSug.toFixed(2)}), el sistema recomienda apostar <strong>${formatCOP(rescateSug)}</strong> (o en 2 pasos seguros de ${formatCOP(rescateSug/2)}).`,
+            '💡 Mantén la disciplina emocional y no apuestes fuera de tu gestión de bankroll.'
+          ],
+          botonTexto: 'Ver Estrategia de Rescate 🛡️'
+        });
+        return;
+      }
+
+      if (accion === 'cashout') {
+        mostrarModalInputPro({
+          badge: '💵 SALIDA ANTICIPADA / CASH OUT',
+          icon: '💰',
+          titulo: '¿Cuánto dinero te pagó Betano en el Cash Out?',
+          subtitulo: `Boleto #${code} &middot; Inversión realizada: <strong>${formatCOP(apostado)}</strong>`,
+          instruccion: 'Ingresa en pesos ($ COP) el valor exacto que Betano acreditó en tu cuenta al salir antes:',
+          placeholder: 'Ej: 35000',
+          valorDefault: Math.round(apostado * 1.4),
+          botonConfirmar: 'Confirmar Cash Out',
+          onConfirm: (valorIngresado) => {
+            const cobroReal = parseFloat(valorIngresado) || 0;
+            if (cobroReal <= 0) return mostrarToast('Por favor ingresa un monto válido recibido de Betano.', 'warning');
+
+            const neto = cobroReal - apostado;
+            bankrollTotal += neto;
+
+            if (neto > 0 && deudaRecuperacion > 0) {
+              deudaRecuperacion = Math.max(0, deudaRecuperacion - neto);
+            } else if (neto < 0) {
+              deudaRecuperacion += Math.abs(neto);
+            }
+
+            movimientos.unshift({
+              id: Date.now(),
+              code: code,
+              fecha: fechaStr,
+              tipo: 'Cash Out Betano (Cierre Anticipado)',
+              categoria: neto >= 0 ? 'ganada' : 'perdida',
+              concepto: `${boleto.tipo} (Cash Out #${code})`,
+              cuota: cuota,
+              invertido: apostado,
+              retorno: cobroReal,
+              neto: neto
+            });
+
+            const idxAct = apuestasActivas.findIndex(a => a.code === code);
+            if (idxAct !== -1) apuestasActivas.splice(idxAct, 1);
+
+            guardarEstado();
+            renderDashboard();
+            analizarLinkBetano();
+
+            mostrarCelebracionModal({
+              tipo: 'cashout',
+              badge: '💵 SALIDA ANTICIPADA CONFIRMADA',
+              icon: '💰',
+              titulo: '¡Cash Out Registrado con Éxito!',
+              subtitulo: `Cierre anticipado del Boleto #${code}`,
+              metrics: [
+                { label: 'Invertido en Betano', valor: formatCOP(apostado), color: '#94a3b8' },
+                { label: 'Cobrado con Cash Out', valor: formatCOP(cobroReal), color: '#38bdf8' },
+                { label: 'Beneficio Limpio Neto', valor: (neto >= 0 ? `+${formatCOP(neto)}` : formatCOP(neto)), color: neto >= 0 ? '#10b981' : '#f87171', highlight: neto >= 0 ? 'green' : '' },
+                { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+              ],
+              notes: [
+                `✅ <strong>Cierre inteligente:</strong> Aseguraste <strong>${formatCOP(cobroReal)}</strong> en tus finanzas antes de que finalizara el encuentro.`
+              ],
+              botonTexto: 'Continuar 🚀'
+            });
+          }
+        });
+        return;
+      }
+
+      if (accion === 'ganada') {
+        const cobro = boleto.gananciaTotal || Math.round(apostado * cuota);
+        const neto = boleto.beneficioLimpio || (cobro - apostado);
+
+        bankrollTotal += neto;
+        if (deudaRecuperacion > 0) {
+          deudaRecuperacion = Math.max(0, deudaRecuperacion - neto);
+        }
+
+        movimientos.unshift({
+          id: Date.now(),
+          code: code,
+          fecha: fechaStr,
+          tipo: 'Apuesta Ganada Betano',
+          categoria: 'ganada',
+          concepto: `${boleto.tipo} (Ganada #${code})`,
+          cuota: cuota,
+          invertido: apostado,
+          retorno: cobro,
+          neto: neto
+        });
+
+        const idxAct = apuestasActivas.findIndex(a => a.code === code);
+        if (idxAct !== -1) apuestasActivas.splice(idxAct, 1);
+
+        guardarEstado();
+        renderDashboard();
+        analizarLinkBetano();
+
+        mostrarCelebracionModal({
+          tipo: 'ganada',
+          badge: '🏆 ¡VICTORIA CONFIRMADA!',
+          icon: '🎉',
+          titulo: '¡GANANCIA APLICADA AL BANKROLL!',
+          subtitulo: `Boleto Oficial de Betano #${code} Procesado (@ ${cuota.toFixed(2)})`,
+          metrics: [
+            { label: 'Invertido en Betano', valor: formatCOP(apostado), color: '#94a3b8' },
+            { label: 'Cobrado de Betano', valor: formatCOP(cobro), color: '#38bdf8' },
+            { label: 'Beneficio Limpio Sumado', valor: `+${formatCOP(neto)}`, color: '#10b981', highlight: 'green' },
+            { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+          ],
+          notes: [
+            '⚡ <strong>Efectividad:</strong> Tu porcentaje de acierto y racha ganadora se han incrementado.',
+            '📋 <strong>Historial:</strong> Movimiento financiero guardado y auditado con éxito.'
+          ],
+          botonTexto: '¡Excelente, Continuar! 🚀'
+        });
+      }
     }
 
     function actualizarEstrategiaBetano(cuota, customCashout) {
@@ -2559,51 +2822,65 @@
       }
 
       if (accion === 'cashout') {
-        const promptCash = prompt(`💵 Cierre Anticipado / Cash Out (#${ap.code}):\n\n¿Cuánto dinero te pagó Betano al cerrar este boleto? (Ingresa en COP, ej: 32000):`, Math.round(ap.montoApostar * 1.5));
-        if (promptCash === null) return;
-        const cobroReal = parseFloat(promptCash) || 0;
-        if (cobroReal <= 0) return mostrarToast('Monto inválido de Cash Out.', 'warning');
-
-        const neto = cobroReal - ap.montoApostar;
-        bankrollTotal += neto;
-
-        if (ap.caso === 'rescate' && ap.costoPerdida > 0) {
-          if (neto > 0) {
-            deudaRecuperacion = Math.max(0, deudaRecuperacion - neto);
-          }
-        }
-
-        movimientos.unshift({
-          id: Date.now(),
-          fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
-          tipo: 'Cash Out Betano',
-          categoria: neto >= 0 ? 'ganada' : 'perdida',
-          concepto: `${ap.titulo} (Cash Out anticipado)`,
-          cuota: ap.cuota,
-          invertido: ap.montoApostar,
-          retorno: cobroReal,
-          neto: neto
-        });
-
-        apuestasActivas.splice(index, 1);
-        guardarEstado();
-
-        mostrarCelebracionModal({
-          tipo: 'cashout',
-          badge: '💵 CASHOUT CONFIRMADO',
+        mostrarModalInputPro({
+          badge: '💵 SALIDA ANTICIPADA / CASH OUT',
           icon: '💰',
-          titulo: '¡Cash Out Registrado con Éxito!',
-          subtitulo: `Cierre anticipado del Boleto #${ap.code}`,
-          metrics: [
-            { label: 'Invertido', valor: formatCOP(ap.montoApostar), color: '#94a3b8' },
-            { label: 'Cobrado Cashout', valor: formatCOP(cobroReal), color: '#38bdf8' },
-            { label: 'Beneficio Neto', valor: (neto >= 0 ? `+${formatCOP(neto)}` : formatCOP(neto)), color: neto >= 0 ? '#10b981' : '#f87171', highlight: neto >= 0 ? 'green' : '' },
-            { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
-          ],
-          notes: [
-            '✅ Cierre exitoso registrado y sumado a tu balance financiero.'
-          ],
-          botonTexto: 'Continuar 🚀'
+          titulo: '¿Cuánto dinero te pagó Betano en Cash Out?',
+          subtitulo: `Boleto #${ap.code} &middot; Inversión realizada: <strong>${formatCOP(ap.montoApostar)}</strong>`,
+          instruccion: 'Ingresa en pesos ($ COP) el valor cobrado al retirarte antes del evento:',
+          placeholder: 'Ej: 32000',
+          valorDefault: Math.round(ap.montoApostar * 1.4),
+          botonConfirmar: 'Confirmar Cash Out',
+          onConfirm: (valorIngresado) => {
+            const cobroReal = parseFloat(valorIngresado) || 0;
+            if (cobroReal <= 0) return mostrarToast('Monto inválido de Cash Out.', 'warning');
+
+            const neto = cobroReal - ap.montoApostar;
+            bankrollTotal += neto;
+
+            if (ap.caso === 'rescate' && ap.costoPerdida > 0) {
+              if (neto > 0) {
+                deudaRecuperacion = Math.max(0, deudaRecuperacion - neto);
+              } else if (neto < 0) {
+                deudaRecuperacion += Math.abs(neto);
+              }
+            }
+
+            movimientos.unshift({
+              id: Date.now(),
+              code: ap.code,
+              fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+              tipo: 'Cash Out Betano (Cierre Anticipado)',
+              categoria: neto >= 0 ? 'ganada' : 'perdida',
+              concepto: `${ap.titulo} (Cash Out #${ap.code})`,
+              cuota: ap.cuota,
+              invertido: ap.montoApostar,
+              retorno: cobroReal,
+              neto: neto
+            });
+
+            apuestasActivas.splice(index, 1);
+            guardarEstado();
+            renderDashboard();
+
+            mostrarCelebracionModal({
+              tipo: 'cashout',
+              badge: '💵 CASHOUT CONFIRMADO',
+              icon: '💰',
+              titulo: '¡Cash Out Registrado con Éxito!',
+              subtitulo: `Cierre anticipado del Boleto #${ap.code}`,
+              metrics: [
+                { label: 'Invertido', valor: formatCOP(ap.montoApostar), color: '#94a3b8' },
+                { label: 'Cobrado Cashout', valor: formatCOP(cobroReal), color: '#38bdf8' },
+                { label: 'Beneficio Neto', valor: (neto >= 0 ? `+${formatCOP(neto)}` : formatCOP(neto)), color: neto >= 0 ? '#10b981' : '#f87171', highlight: neto >= 0 ? 'green' : '' },
+                { label: 'Nuevo Bankroll en Caja', valor: formatCOP(bankrollTotal), color: '#fbbf24', highlight: 'bankroll', fullWidth: true }
+              ],
+              notes: [
+                '✅ Cierre exitoso registrado y sumado a tu balance financiero.'
+              ],
+              botonTexto: 'Continuar 🚀'
+            });
+          }
         });
         return;
       }

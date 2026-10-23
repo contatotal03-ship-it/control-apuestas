@@ -1663,6 +1663,7 @@
         code: 'ATY8SP4H',
         tipo: 'Simple',
         cuota: 1.44,
+        esVerificado: true,
         partidos: [
           { evento: '⚽ Besiktas JK vs Crystal Palace FC', pick: 'Ambos equipos anotan: Sí', mercado: 'Ambos equipos anotarán (1X2)', odds: 1.44, color: '#38bdf8' }
         ],
@@ -1672,6 +1673,7 @@
         code: 'W5WMGTME',
         tipo: 'Combinada de 7 (con BetBuilders)',
         cuota: 129.37,
+        esVerificado: true,
         partidos: [
           { evento: '⚽ OFI Creta vs Bayer 04 Leverkusen', pick: 'Leverkusen Gana & Goles +1.5 & Córners +7.5', mercado: 'BetBuilder Combinado', odds: 1.80, color: '#ff5e00' },
           { evento: '⚽ FK Jablonec vs Brighton & Hove Albion', pick: 'Brighton Gana & Brighton +1.5 Goles & Córners +8.5', mercado: 'BetBuilder Combinado', odds: 1.82, color: '#38bdf8' },
@@ -1687,6 +1689,7 @@
         code: '7UPLY37T',
         tipo: 'BetBuilder (Creador de Apuesta)',
         cuota: 1.67,
+        esVerificado: true,
         partidos: [
           { evento: '⚽ Besiktas JK vs Crystal Palace FC', pick: 'Ambos equipos anotan: Sí (@ 1.45) & Goles totales: Más de 2.5 (@ 1.52)', mercado: 'BetBuilder Combinado (Mismo Partido)', odds: 1.67, color: '#ff5e00' }
         ],
@@ -1696,6 +1699,7 @@
         code: 'YNR3DKV9',
         tipo: 'Simple',
         cuota: 1.45,
+        esVerificado: true,
         partidos: [
           { evento: '⚽ Besiktas JK vs Crystal Palace FC', pick: 'Sí (Ambos equipos anotan)', mercado: 'Ambos equipos anotarán (1X2)', odds: 1.45, color: '#38bdf8' }
         ],
@@ -1705,6 +1709,7 @@
         code: 'M83S7XXL',
         tipo: 'Simple',
         cuota: 1.72,
+        esVerificado: true,
         partidos: [
           { evento: '⚽ Club América vs CF Pachuca', pick: 'Club América Gana', mercado: 'Resultado del Partido (1X2)', odds: 1.72, color: '#ff5e00' }
         ],
@@ -1714,6 +1719,7 @@
         code: '87HRQDSU',
         tipo: 'Combinada de 3',
         cuota: 7.50,
+        esVerificado: true,
         partidos: [
           { evento: '⚽ Llaneros vs Cali', pick: 'Cali o Empate & Córners +8.5', mercado: 'Doble Oportunidad & Córners', odds: 3.45, color: '#ff5e00' },
           { evento: '⚽ Barranquilla vs América', pick: 'América Gana & Goles +1.5', mercado: 'Resultado & Total Goles', odds: 1.50, color: '#38bdf8' },
@@ -1725,6 +1731,7 @@
         code: 'WVQY3EYW',
         tipo: 'Simple (Ganada ✅)',
         cuota: 1.78,
+        esVerificado: true,
         montoApostado: 122453,
         gananciaTotal: 217966,
         beneficioLimpio: 95513,
@@ -2022,19 +2029,51 @@
       }
     });
 
-    function renderPartidosBoleto(partidos) {
+    function renderPartidosBoleto(partidos, boleto) {
       const container = document.getElementById('betanoPartidosContainer');
-      container.innerHTML = partidos.map(p => `
-        <div style="background: rgba(0,0,0,0.3); border-left: 3px solid ${p.color || '#ff5e00'}; border-radius: 0.5rem; padding: 0.6rem 0.75rem; font-size: 0.8rem;">
-          <div style="display: flex; justify-content: space-between; font-weight: 700;">
-            <span>${p.evento}</span>
-            <span style="color: ${p.color || '#ff5e00'}; font-family: 'JetBrains Mono', monospace;">@ ${Number(p.odds).toFixed(2)}</span>
+      const esVerif = boleto && boleto.esVerificado;
+      const bCode = (boleto && boleto.code) || '';
+      container.innerHTML = partidos.map((p, idx) => `
+        <div style="background: rgba(0,0,0,0.3); border-left: 3px solid ${p.color || '#ff5e00'}; border-radius: 0.5rem; padding: 0.65rem 0.85rem; font-size: 0.8rem; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 700;">
+            <span id="txtEvento_${idx}">${p.evento}</span>
+            <span style="color: ${p.color || '#ff5e00'}; font-family: 'JetBrains Mono', monospace;" id="txtOdds_${idx}">@ ${Number(p.odds).toFixed(2)}</span>
           </div>
-          <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.15rem;">
-            ${p.pick} &bull; <span style="opacity: 0.8;">${p.mercado}</span>
+          <div style="font-size: 0.73rem; color: #94a3b8; margin-top: 0.25rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span id="txtPick_${idx}">${p.pick} &bull; <span style="opacity: 0.8;">${p.mercado}</span></span>
+            ${!esVerif ? `
+              <button type="button" onclick="editarPartidoManual('${bCode}', ${idx})" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; border-radius: 0.35rem; padding: 0.2rem 0.55rem; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;">
+                ✏️ Editar Partido
+              </button>
+            ` : ''}
           </div>
         </div>
       `).join('');
+    }
+
+    function editarPartidoManual(code, idx) {
+      const b = BETANO_DATABASE[code];
+      if (!b || !b.partidos[idx]) return;
+      const part = b.partidos[idx];
+      mostrarModalInputPro({
+        badge: 'EDITAR PARTIDO',
+        icon: '⚽',
+        tipo: 'normal',
+        accentColor: '#38bdf8',
+        titulo: 'Personalizar Nombre del Partido',
+        subtitulo: `Boleto #${code} &middot; Modifica los datos del evento:`,
+        instruccion: 'Ingresa el nombre del partido o selección:',
+        placeholder: 'Ej: Millonarios vs Santa Fe (Gana Millonarios)',
+        valorDefault: part.evento.replace('⚽ ', ''),
+        botonConfirmar: 'Guardar Nombre',
+        onConfirm: (val) => {
+          if (!val.trim()) return;
+          part.evento = '⚽ ' + val.trim();
+          part.pick = 'Selección personalizada';
+          renderPartidosBoleto(b.partidos, b);
+          mostrarToast('Partido actualizado en el boleto.', 'success');
+        }
+      });
     }
 
     function limpiarPantallaBoleto() {
@@ -2075,7 +2114,7 @@
       }
 
       let boleto = BETANO_DATABASE[code];
-      const esPredefinido = !!boleto;
+      const yaVerificado = !!(boleto && boleto.esVerificado);
 
       // Si no está en base de datos predefinida, crear boleto dinámico sin interrumpir con prompt
       if (!boleto) {
@@ -2087,8 +2126,9 @@
           code: code,
           tipo: `Boleto #${code}`,
           cuota: cuotaActual,
+          esVerificado: false,
           partidos: [
-            { evento: `⚽ Boleto Betano #${code}`, pick: 'Selección desde enlace', mercado: 'Cuota ajustable en el panel', odds: cuotaActual, color: '#ff5e00' }
+            { evento: `⚽ Partido / Selección #${code}`, pick: 'Selección desde enlace', mercado: 'Cuota ajustable abajo', odds: cuotaActual, color: '#ff5e00' }
           ],
           cashoutNote: 'Evalúa Cash Out en vivo si tu jugada va a favor antes de que termine el tiempo reglamentario.'
         };
@@ -2101,14 +2141,29 @@
       document.getElementById('betanoCuotaTotal').innerText = `@ ${cuotaBoleto.toFixed(2)}`;
 
       if (feedbackEl) {
-        if (esPredefinido) {
+        if (boleto.esVerificado) {
           feedbackEl.innerHTML = `<span style="color: #10b981; font-weight: 700;">✅ Boleto #${code} cargado con ${boleto.partidos.length} selecciones oficiales (@ ${cuotaBoleto.toFixed(2)}).</span>`;
         } else {
-          feedbackEl.innerHTML = `<span style="color: #fbbf24; font-weight: 600;">⚡ Boleto #${code} detectado. En Betano los enlaces compartidos caducan cuando los partidos inician o terminan. Tu cuota actual es <strong>@ ${cuotaBoleto.toFixed(2)}</strong> (puedes cambiarla abajo en "Cuota Oficial de Betano").</span>`;
+          feedbackEl.innerHTML = `
+            <div style="background: rgba(245, 158, 11, 0.12); border: 1.5px solid rgba(245, 158, 11, 0.4); border-radius: 0.65rem; padding: 0.65rem 0.85rem; margin-top: 0.35rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                <div style="color: #fbbf24; font-weight: 800; font-size: 0.84rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>⚠️</span> Enlace #${code}: Partido en juego o ya finalizado
+                </div>
+                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.7rem; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 0.5rem; font-size: 0.74rem;">
+                  <span>📷</span> Subir Captura de este Boleto
+                  <input type="file" accept="image/*" style="display: none;" onchange="procesarArchivoImagen(this)">
+                </label>
+              </div>
+              <div style="font-size: 0.76rem; color: #cbd5e1; margin-top: 0.3rem; line-height: 1.4;">
+                En Betano los enlaces compartidos caducan cuando el partido inicia o termina (servidor Betano: <em>AllResulted</em>). Para extraer los nombres de los equipos y tu cobro automáticamente, pulsa <strong>"Subir Captura"</strong> con la foto de tu boleto, o edita los datos abajo.
+              </div>
+            </div>
+          `;
         }
       }
 
-      renderPartidosBoleto(boleto.partidos);
+      renderPartidosBoleto(boleto.partidos, boleto);
 
       // Panel de Resolución de Jugada / Captura Betano (Ganada, Perdida, Cash Out, Anulada, En Juego)
       const boxResolucion = document.getElementById('boxResolucionBoleto');
@@ -2610,6 +2665,9 @@
     // --- CÁLCULO EN VIVO SOPORTANDO COSTO $0 Y TODOS LOS CASOS ---
     function calcularEnVivo() {
       const cuota = parseFloat(document.getElementById('dynCuota').value) || 1.01;
+      const elCuotaTotal = document.getElementById('betanoCuotaTotal');
+      if (elCuotaTotal) elCuotaTotal.innerText = `@ ${cuota.toFixed(2)}`;
+
       const costoPerdida = parseFloat(document.getElementById('dynPerdida').value) || 0;
       const gananciaExtra = parseFloat(document.getElementById('dynGananciaExtra').value) || 0;
       const montoManual = parseFloat(document.getElementById('dynMontoManual').value) || (bankrollTotal * 0.02);

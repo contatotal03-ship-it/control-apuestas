@@ -755,14 +755,17 @@
         </div>
 
         <div style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: stretch;">
-          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí el link: https://www.betano.co/bookingcode/WVQY3EYW/ o pulsa 'Subir Imagen'" value="https://www.betano.co/bookingcode/WVQY3EYW/" oninput="analizarLinkBetano()">
-          <button class="btn btn-betano" style="width: auto; min-width: 160px; padding: 0.85rem 1.2rem;" onclick="analizarLinkBetano()">
+          <input type="text" id="betanoLinkInput" style="flex: 1; min-width: 250px;" placeholder="Pega aquí tu enlace de Betano (ej: https://www.betano.co/bookingcode/...) o pulsa 'Subir Imagen'" value="" oninput="analizarLinkBetano()">
+          <button class="btn btn-betano" style="width: auto; min-width: 150px; padding: 0.85rem 1.15rem;" onclick="analizarLinkBetano()">
             <span>⚡</span> Cargar Enlace
           </button>
-          <label style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.85rem 1.25rem; background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 0.75rem; font-size: 0.85rem; white-space: nowrap; transition: all 0.2s; box-shadow: 0 4px 12px rgba(56,189,248,0.25);">
+          <label style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.85rem 1.15rem; background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 0.75rem; font-size: 0.85rem; white-space: nowrap; transition: all 0.2s; box-shadow: 0 4px 12px rgba(56,189,248,0.25);">
             <span>📷</span> Subir / Pegar Imagen
             <input type="file" id="inputFotoBetano" accept="image/*" style="display: none;" onchange="procesarArchivoImagen(this)">
           </label>
+          <button type="button" class="btn" style="width: auto; padding: 0.85rem 1.15rem; background: rgba(239, 68, 68, 0.15); border: 1.5px solid #ef4444; color: #fca5a5; font-weight: 800; border-radius: 0.75rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; transition: all 0.2s;" onclick="limpiarPantallaBoleto()" title="Limpiar la pantalla y vaciar el boleto actual">
+            <span>🧹</span> Limpiar Pantalla
+          </button>
         </div>
         <div id="betanoStatusFeedback" style="font-size: 0.78rem; margin-top: 0.45rem; line-height: 1.4;"></div>
 
@@ -780,24 +783,31 @@
           </div>
         </div>
 
-        <!-- Accesos directos a boletos guardados categorizados -->
-        <div style="margin-top: 0.75rem; display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center;">
-          <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 700; margin-right: 0.2rem;">Diferenciar Boletos:</span>
-          <button type="button" style="background: rgba(16, 185, 129, 0.22); border: 1.5px solid #10b981; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.74rem; color: #34d399; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap; box-shadow: 0 2px 8px rgba(16,185,129,0.3);" onclick="cargarBoletoRapido('WVQY3EYW')">🏆 WVQY3EYW @ 1.78 (Resuelta / Ganada)</button>
-          <button type="button" style="background: rgba(139, 92, 246, 0.18); border: 1.5px solid #8b5cf6; border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.74rem; color: #c084fc; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('W5WMGTME')">💣 W5WMGTME @ 129.37 (Combinada 7)</button>
-          <button type="button" style="background: rgba(56, 189, 248, 0.18); border: 1.5px solid #38bdf8; border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.74rem; color: #38bdf8; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('87HRQDSU')">⚽ 87HRQDSU @ 7.50 (Combinada 3)</button>
-          <button type="button" style="background: rgba(245, 158, 11, 0.18); border: 1.5px solid #f59e0b; border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.74rem; color: #fbbf24; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('7UPLY37T')">🛠️ 7UPLY37T @ 1.67 (BetBuilder)</button>
-          <button type="button" style="background: rgba(255, 255, 255, 0.08); border: 1.5px solid rgba(255, 255, 255, 0.2); border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.74rem; color: #f1f5f9; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('ATY8SP4H')">🎯 ATY8SP4H @ 1.44 (Simple)</button>
-        </div>
+        <!-- Boletos de demostración plegables para no saturar la pantalla -->
+        <details style="margin-top: 0.75rem; background: rgba(15, 23, 42, 0.5); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 0.65rem; padding: 0.45rem 0.75rem;">
+          <summary style="font-size: 0.76rem; color: #94a3b8; font-weight: 700; cursor: pointer; user-select: none;">
+            💡 <span>Ver boletos de prueba / ejemplos (Haz clic aquí solo si deseas cargar ejemplos de demostración) ▾</span>
+          </summary>
+          <div style="margin-top: 0.6rem; display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center;">
+            <button type="button" style="background: rgba(16, 185, 129, 0.22); border: 1.5px solid #10b981; border-radius: 9999px; padding: 0.35rem 0.85rem; font-size: 0.74rem; color: #34d399; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('WVQY3EYW')">🏆 WVQY3EYW @ 1.78 (Resuelta / Ganada)</button>
+            <button type="button" style="background: rgba(139, 92, 246, 0.18); border: 1.5px solid #8b5cf6; border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.74rem; color: #c084fc; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('W5WMGTME')">💣 W5WMGTME @ 129.37 (Combinada 7)</button>
+            <button type="button" style="background: rgba(56, 189, 248, 0.18); border: 1.5px solid #38bdf8; border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.74rem; color: #38bdf8; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('87HRQDSU')">⚽ 87HRQDSU @ 7.50 (Combinada 3)</button>
+            <button type="button" style="background: rgba(245, 158, 11, 0.18); border: 1.5px solid #f59e0b; border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.74rem; color: #fbbf24; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('7UPLY37T')">🛠️ 7UPLY37T @ 1.67 (BetBuilder)</button>
+            <button type="button" style="background: rgba(255, 255, 255, 0.08); border: 1.5px solid rgba(255, 255, 255, 0.2); border-radius: 9999px; padding: 0.35rem 0.8rem; font-size: 0.74rem; color: #f1f5f9; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; white-space: nowrap;" onclick="cargarBoletoRapido('ATY8SP4H')">🎯 ATY8SP4H @ 1.44 (Simple)</button>
+          </div>
+        </details>
 
-        <!-- TARJETA DE ESTRATEGIA Y BOLETO BETANO EN VIVO -->
-        <div id="cardBoletoBetano" style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem;">
+        <!-- TARJETA DE ESTRATEGIA Y BOLETO BETANO EN VIVO (Oculta por defecto hasta que pegues un link o subas foto) -->
+        <div id="cardBoletoBetano" style="display: none; margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               <span style="background: #ff5e00; color: #fff; font-weight: 800; font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 0.35rem;">BETANO</span>
-              <strong style="color: #fff; font-size: 0.95rem;" id="betanoBoletoTitulo">Combinada de 3 (#87HRQDSU)</strong>
+              <strong style="color: #fff; font-size: 0.95rem;" id="betanoBoletoTitulo">Boleto Cargado</strong>
             </div>
-            <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.35rem; font-weight: 900; color: #ff5e00;" id="betanoCuotaTotal">@ 7.50</div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.35rem; font-weight: 900; color: #ff5e00;" id="betanoCuotaTotal">@ 1.80</div>
+              <button type="button" onclick="limpiarPantallaBoleto()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); color: #94a3b8; border-radius: 0.4rem; padding: 0.3rem 0.65rem; font-size: 0.75rem; cursor: pointer; font-weight: 700; transition: all 0.2s;" title="Cerrar y quitar este boleto">✕ Cerrar Boleto</button>
+            </div>
           </div>
 
           <!-- Partidos del boleto como en bet.png -->
@@ -833,76 +843,77 @@
             <!-- Rellenado por JS -->
           </div>
 
-          <!-- ASESOR DE SALIDA / CASH OUT EN VIVO (CUÁNDO SALIR DE LA APUESTA) -->
-          <div style="margin-top: 0.9rem; background: rgba(8, 14, 26, 0.85); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 0.85rem; padding: 0.95rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
-              <div style="font-weight: 800; color: #fbbf24; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
-                <span>💵</span> Asesor de Cash Out: ¿Cuándo salir de Betano?
-              </div>
-              <span class="box-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.68rem;">En Vivo</span>
-            </div>
+          <!-- HERRAMIENTAS AVANZADAS EN VIVO (PLEGABLES PARA NO SATURAR LA PANTALLA) -->
+          <div style="margin-top: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
+            <!-- ASESOR DE SALIDA / CASH OUT EN VIVO (PLEGABLE) -->
+            <details style="background: rgba(8, 14, 26, 0.85); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 0.85rem; padding: 0.65rem 0.95rem;">
+              <summary style="font-weight: 800; color: #fbbf24; font-size: 0.88rem; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between;">
+                <span>💵 Asesor de Cash Out (¿Cuándo salir de Betano?)</span>
+                <span class="box-badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.68rem;">Herramienta ▾</span>
+              </summary>
+              <div style="margin-top: 0.75rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; margin-bottom: 0.65rem;">
+                  <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Oferta Cash Out que te da Betano ($ COP):</label>
+                    <input type="number" id="inputCashoutOferta" placeholder="Ej: 3050" oninput="evaluarCashoutEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Situación Actual del Boleto:</label>
+                    <select id="selectCashoutSituacion" onchange="evaluarCashoutEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.84rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
+                      <option value="falta_partido">Falta 1 partido por jugarse en la combinada</option>
+                      <option value="minutos_finales">Van ganando y faltan 10-15 min para el final</option>
+                      <option value="rival_presiona">El rival está atacando mucho / peligro inminente</option>
+                      <option value="controlado">Partido dominado con tranquilidad</option>
+                    </select>
+                  </div>
+                </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.6rem; margin-bottom: 0.65rem;">
-              <div>
-                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Oferta Cash Out que te da Betano ($ COP):</label>
-                <input type="number" id="inputCashoutOferta" placeholder="Ej: 3050" oninput="evaluarCashoutEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
-              </div>
-              <div>
-                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Situación Actual del Boleto:</label>
-                <select id="selectCashoutSituacion" onchange="evaluarCashoutEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.84rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
-                  <option value="falta_partido">Falta 1 partido por jugarse en la combinada</option>
-                  <option value="minutos_finales">Van ganando y faltan 10-15 min para el final</option>
-                  <option value="rival_presiona">El rival está atacando mucho / peligro inminente</option>
-                  <option value="controlado">Partido dominado con tranquilidad</option>
-                </select>
-              </div>
-            </div>
+                <!-- Veredicto Matemático del Cash Out -->
+                <div id="boxVeredictoCashout" style="background: rgba(0,0,0,0.3); border-radius: 0.65rem; padding: 0.75rem; font-size: 0.82rem; line-height: 1.45; border-left: 3px solid #fbbf24;">
+                  💡 <em>Ingresa arriba cuánto te ofrece Betano en este momento para recibir la recomendación matemática en tiempo real sobre si debes cobrar ya o dejar correr.</em>
+                </div>
 
-            <!-- Veredicto Matemático del Cash Out -->
-            <div id="boxVeredictoCashout" style="background: rgba(0,0,0,0.3); border-radius: 0.65rem; padding: 0.75rem; font-size: 0.82rem; line-height: 1.45; border-left: 3px solid #fbbf24;">
-              💡 <em>Ingresa arriba cuánto te ofrece Betano en este momento para recibir la recomendación matemática en tiempo real sobre si debes cobrar ya o dejar correr.</em>
-            </div>
-
-            <button type="button" class="btn btn-gold" id="btnCobrarCashout" onclick="cobrarCashoutModal()" style="margin-top: 0.65rem; padding: 0.6rem 1rem; font-size: 0.84rem; display: none;">
-              <span>✅</span> Cobrar este Cash Out y Sumar a mi Bankroll
-            </button>
-          </div>
-
-          <!-- CALCULADORA DE COBERTURA / HEDGING (ASEGURAR GANANCIA EN ÚLTIMO PARTIDO) -->
-          <div style="margin-top: 0.9rem; background: rgba(8, 14, 26, 0.85); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 0.85rem; padding: 0.95rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
-              <div style="font-weight: 800; color: #34d399; font-size: 0.92rem; display: flex; align-items: center; gap: 0.4rem;">
-                <span>🛡️</span> Calculadora de Cobertura (Hedging en Combinadas)
+                <button type="button" class="btn btn-gold" id="btnCobrarCashout" onclick="cobrarCashoutModal()" style="margin-top: 0.65rem; padding: 0.6rem 1rem; font-size: 0.84rem; display: none;">
+                  <span>✅</span> Cobrar este Cash Out y Sumar a mi Bankroll
+                </button>
               </div>
-              <span class="box-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem;">Asegurar Ganancia</span>
-            </div>
+            </details>
 
-            <div style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.65rem; line-height: 1.4;">
-              Si ya ganaron los primeros partidos de tu combinada y solo falta <strong>1 partido por jugarse</strong>, calcula cuánto apostar al resultado contrario para <strong>garantizar ganancia neta sí o sí</strong> sin regalarle margen al Cash Out de Betano.
-            </div>
+            <!-- CALCULADORA DE COBERTURA / HEDGING (PLEGABLE) -->
+            <details style="background: rgba(8, 14, 26, 0.85); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 0.85rem; padding: 0.65rem 0.95rem;">
+              <summary style="font-weight: 800; color: #34d399; font-size: 0.88rem; cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between;">
+                <span>🛡️ Calculadora de Cobertura (Hedging en Combinadas)</span>
+                <span class="box-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.68rem;">Herramienta ▾</span>
+              </summary>
+              <div style="margin-top: 0.75rem;">
+                <div style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.65rem; line-height: 1.4;">
+                  Si ya ganaron los primeros partidos de tu combinada y solo falta <strong>1 partido por jugarse</strong>, calcula cuánto apostar al resultado contrario para <strong>garantizar ganancia neta sí o sí</strong> sin regalarle margen al Cash Out de Betano.
+                </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.6rem; margin-bottom: 0.65rem;">
-              <div>
-                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Premio que Cobras en la Combinada ($ COP):</label>
-                <input type="number" id="inputHedgePremio" placeholder="Ej: 129370" oninput="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff; font-family: 'JetBrains Mono', monospace;">
-              </div>
-              <div>
-                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Cuota Opuesta/Rival en el Último Partido:</label>
-                <input type="number" step="0.01" id="inputHedgeCuota" placeholder="Ej: 2.10" value="2.10" oninput="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 700;">
-              </div>
-              <div>
-                <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Estrategia de Cobertura:</label>
-                <select id="selectHedgeModo" onchange="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.82rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
-                  <option value="equilibrada">100% Equilibrada (Misma ganancia gane quien gane)</option>
-                  <option value="free_roll">Riesgo Cero (Solo asegurar la inversión inicial)</option>
-                </select>
-              </div>
-            </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.6rem; margin-bottom: 0.65rem;">
+                  <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Premio que Cobras en la Combinada ($ COP):</label>
+                    <input type="number" id="inputHedgePremio" placeholder="Ej: 129370" oninput="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff; font-family: 'JetBrains Mono', monospace;">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Cuota Opuesta/Rival en el Último Partido:</label>
+                    <input type="number" step="0.01" id="inputHedgeCuota" placeholder="Ej: 2.10" value="2.10" oninput="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.88rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 700;">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.74rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Estrategia de Cobertura:</label>
+                    <select id="selectHedgeModo" onchange="calcularHedgingEnVivo()" style="width: 100%; padding: 0.55rem 0.75rem; font-size: 0.82rem; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 0.5rem; color: #fff;">
+                      <option value="equilibrada">100% Equilibrada (Misma ganancia gane quien gane)</option>
+                      <option value="free_roll">Riesgo Cero (Solo asegurar la inversión inicial)</option>
+                    </select>
+                  </div>
+                </div>
 
-            <!-- Veredicto del Hedging -->
-            <div id="boxResultadoHedging" style="background: rgba(0,0,0,0.3); border-radius: 0.65rem; padding: 0.75rem; font-size: 0.82rem; line-height: 1.45; border-left: 3px solid #10b981;">
-              Calculando cobertura...
-            </div>
+                <!-- Veredicto del Hedging -->
+                <div id="boxResultadoHedging" style="background: rgba(0,0,0,0.3); border-radius: 0.65rem; padding: 0.75rem; font-size: 0.82rem; line-height: 1.45; border-left: 3px solid #10b981;">
+                  Calculando cobertura...
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -2026,13 +2037,30 @@
       `).join('');
     }
 
+    function limpiarPantallaBoleto() {
+      const input = document.getElementById('betanoLinkInput');
+      if (input) input.value = '';
+      const feedbackEl = document.getElementById('betanoStatusFeedback');
+      if (feedbackEl) feedbackEl.innerHTML = '';
+      const cardEl = document.getElementById('cardBoletoBetano');
+      if (cardEl) cardEl.style.display = 'none';
+      const ocrFeedback = document.getElementById('ocrLoadingFeedback');
+      if (ocrFeedback) ocrFeedback.style.display = 'none';
+      const fileInput = document.getElementById('inputFotoBetano');
+      if (fileInput) fileInput.value = '';
+      mostrarToast('Pantalla limpia. Lista para tu próximo boleto.', 'info');
+    }
+
     function analizarLinkBetano() {
       const linkRaw = document.getElementById('betanoLinkInput').value.trim();
       const feedbackEl = document.getElementById('betanoStatusFeedback');
+      const cardEl = document.getElementById('cardBoletoBetano');
       if (!linkRaw) {
         if (feedbackEl) feedbackEl.innerHTML = '';
+        if (cardEl) cardEl.style.display = 'none';
         return;
       }
+      if (cardEl) cardEl.style.display = 'block';
 
       // Extraer código (soporta booking code, IMG_xxxx, o consulta directa en base de datos)
       let code = '';
@@ -3978,15 +4006,19 @@
         badge: 'REINICIAR TODO',
         icon: '⚠️',
         titulo: '¿Reiniciar Historial Completo?',
-        mensaje: 'Se borrarán todos los movimientos registrados y el déficit se reiniciará a $0 COP. Esta acción no se puede deshacer.',
+        mensaje: 'Se borrarán todos los movimientos registrados, las apuestas en juego y el déficit se reiniciará a $0 COP. Tu bankroll se conservará. ¿Deseas continuar?',
         botonConfirmar: 'Sí, Reiniciar Todo',
         botonCancelar: 'Cancelar',
         onConfirm: () => {
           movimientos = [];
+          apuestasActivas = [];
           deudaRecuperacion = 0;
           document.getElementById('dynPerdida').value = 0;
           guardarEstado();
-          mostrarToast('Historial reiniciado por completo', 'info');
+          renderDashboard();
+          renderApuestasActivas();
+          limpiarPantallaBoleto();
+          mostrarToast('Historial, apuestas en juego y déficit reiniciados por completo.', 'success');
         }
       });
     }

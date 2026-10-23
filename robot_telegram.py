@@ -55,6 +55,33 @@ def get_user_bankroll(user_id):
         return float(row[0])
     return 1000000.0  # Default: 1.000.000 COP
 
+CLOUD_SYNC_ENDPOINT = "https://api.restful-api.dev/objects/ff808181a09d98f701a169b9e0097184"
+
+def sincronizar_nube_realtime(bankroll, deuda):
+    try:
+        payload = {
+            "name": "Bankroll_Pro_Master_Live_Database",
+            "data": {
+                "bankroll": float(bankroll),
+                "deuda": float(deuda),
+                "lastUpdated": int(datetime.now().timestamp() * 1000)
+            }
+        }
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(CLOUD_SYNC_ENDPOINT, data=data, method="PUT", headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=4) as res:
+            pass
+        # Actualizar datos_apuestas.json local para GitHub
+        gh_data = {
+            "bankroll": float(bankroll),
+            "deuda": float(deuda),
+            "ultimaActualizacion": datetime.now().isoformat()
+        }
+        with open(os.path.join(os.path.dirname(__file__), "datos_apuestas.json"), "w", encoding="utf-8") as f:
+            json.dump(gh_data, f, indent=2)
+    except Exception as e:
+        print(f"Error sincronizando nube desde Telegram: {e}")
+
 def set_user_bankroll(user_id, bankroll):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -65,6 +92,7 @@ def set_user_bankroll(user_id, bankroll):
     """, (user_id, bankroll))
     conn.commit()
     conn.close()
+    sincronizar_nube_realtime(bankroll, get_user_debt(user_id))
 
 def get_user_debt(user_id):
     conn = sqlite3.connect(DB_PATH)
@@ -88,6 +116,7 @@ def update_user_balance_and_debt(user_id, delta_bank, delta_debt):
     """, (user_id, current_bank, current_debt))
     conn.commit()
     conn.close()
+    sincronizar_nube_realtime(current_bank, current_debt)
     return current_bank, current_debt
 
 # Llamadas a la API de Telegram con soporte para JSON

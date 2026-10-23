@@ -645,11 +645,10 @@
         <span>⚡</span> GESTIÓN DINÁMICA &middot; COSTO $0 &middot; RESCATE &middot; FREEBETS
       </div>
       <h1>Bankroll Master PRO &middot; Todos los Casos</h1>
-      <p class="subtitle">Soporta costo $0 (Freebets/Bonos/Sin deuda previa), apuestas variables, rescates matemáticos y resolución con 1 clic (Ganada, Perdida o Anulada).</p>
-      <div style="display: flex; justify-content: center; gap: 0.6rem; margin-top: 0.75rem; flex-wrap: wrap;">
-        <button type="button" onclick="abrirModalSincronizacion()" style="background: rgba(56, 189, 248, 0.18); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 9999px; padding: 0.45rem 1.15rem; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; transition: all 0.2s; box-shadow: 0 4px 14px rgba(56,189,248,0.25);">
-          <span>📲</span> Sincronizar Celular / Otro PC / Telegram
-        </button>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 0.55rem;">
+        <span id="cloudSyncIndicator" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.74rem; color: #34d399; font-weight: 700; background: rgba(16, 185, 129, 0.12); padding: 0.25rem 0.75rem; border-radius: 9999px; border: 1px solid rgba(16, 185, 129, 0.35); box-shadow: 0 0 12px rgba(16,185,129,0.18);">
+          <span style="font-size: 0.6rem;">🟢</span> Base de Datos en Tiempo Real (Nube & GitHub Sincronizado)
+        </span>
       </div>
     </header>
 
@@ -3478,6 +3477,7 @@
       localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
 
       sincronizarConTelegramCloud('guardar');
+      guardarEstadoNubeRealtime();
 
       renderDashboard();
       renderApuestasActivas();
@@ -4199,72 +4199,122 @@
       a.remove();
     }
 
-    function generarEnlaceSincronizacion(incluirHistorial = true) {
-      const baseUrl = 'https://contatotal03-ship-it.github.io/control-apuestas/';
-      const bank = Math.round(bankrollTotal);
-      const deuda = Math.round(deudaRecuperacion);
-      
-      let link = `${baseUrl}?bank=${bank}&deuda=${deuda}`;
-      if (incluirHistorial && movimientos.length > 0) {
-        try {
-          const payload = {
-            bankroll: bank,
-            deuda: deuda,
-            movimientos: movimientos.slice(0, 30),
-            apuestasActivas: apuestasActivas
-          };
-          const encoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(payload)))));
-          link += `&sync_data=${encoded}`;
-        } catch (e) {
-          console.log('Sync data compression note:', e);
-        }
+    // --- MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL MULTIDISPOSITIVO (NUBE & GITHUB) ---
+    const CLOUD_SYNC_ENDPOINT = 'https://api.restful-api.dev/objects/ff808181a09d98f701a169b9e0097184';
+    let ultimaActualizacionNube = 0;
+    let isSyncingToCloud = false;
+
+    async function guardarEstadoNubeRealtime() {
+      if (isSyncingToCloud) return;
+      isSyncingToCloud = true;
+
+      const elInd = document.getElementById('cloudSyncIndicator');
+      if (elInd) {
+        elInd.innerHTML = '<span style="font-size: 0.6rem;">🟡</span> Sincronizando con la Nube...';
+        elInd.style.color = '#fbbf24';
       }
-      return link;
+
+      const now = Date.now();
+      ultimaActualizacionNube = now;
+      const payload = {
+        name: 'Bankroll_Pro_Master_Live_Database',
+        data: {
+          bankroll: bankrollTotal,
+          deuda: deudaRecuperacion,
+          movimientos: movimientos.slice(0, 50),
+          apuestasActivas: apuestasActivas,
+          lastUpdated: now
+        }
+      };
+
+      try {
+        await fetch(CLOUD_SYNC_ENDPOINT, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (elInd) {
+          elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Base de Datos en Tiempo Real (Nube & GitHub Sincronizado)';
+          elInd.style.color = '#34d399';
+        }
+      } catch (e) {
+        console.log('Sync cloud notice:', e);
+        if (elInd) {
+          elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Guardado Local Activo';
+          elInd.style.color = '#38bdf8';
+        }
+      } finally {
+        isSyncingToCloud = false;
+      }
     }
 
-    function abrirModalSincronizacion() {
-      const link = generarEnlaceSincronizacion(true);
-      const linkCorto = generarEnlaceSincronizacion(false);
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(linkCorto)}`;
+    async function cargarEstadoDesdeNube(forzar = false) {
+      const elInd = document.getElementById('cloudSyncIndicator');
+      try {
+        const res = await fetch(CLOUD_SYNC_ENDPOINT + '?_t=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('Respuesta de nube no disponible');
+        const json = await res.json();
+        const data = json && json.data;
+        if (!data) return;
 
-      mostrarCelebracionModal({
-        tipo: 'info',
-        badge: '📲 SINCRONIZACIÓN MÓVIL Y OTRO PC',
-        icon: '☁️',
-        titulo: 'Sincronizar Celular, PC y Telegram',
-        subtitulo: `Transfiere tu caja (${formatCOP(bankrollTotal)}) y tu déficit (${formatCOP(deudaRecuperacion)}) en 1 segundo`,
-        metrics: [
-          { label: 'Bankroll a Sincronizar', valor: formatCOP(bankrollTotal), color: '#38bdf8' },
-          { label: 'Déficit Pendiente', valor: formatCOP(deudaRecuperacion), color: deudaRecuperacion > 0 ? '#ef4444' : '#10b981' }
-        ],
-        notes: [
-          `<div style="text-align: center; margin: 0.5rem 0;">
-            <div style="font-weight: 800; color: #fff; margin-bottom: 0.4rem;">📷 Opción 1: Escanea con la cámara de tu celular:</div>
-            <img src="${qrUrl}" alt="QR Sincronización" style="border-radius: 0.75rem; border: 2.5px solid #38bdf8; padding: 0.35rem; background: #fff; max-width: 170px; height: auto;" />
-            <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.35rem;">Apunta la cámara de tu celular y pulsa el enlace para abrir con todo sincronizado.</div>
-          </div>`,
-          `<strong>📋 Opción 2: Copiar Enlace Mágico:</strong> Puedes copiar el enlace y pegarlo en WhatsApp, Telegram o en el navegador de tu otro computador.`,
-          `<strong>🤖 Opción 3: En Telegram:</strong> Escribe <code>/panel</code> en el robot de Telegram y pulsa <em>"Abrir Calculadora Web"</em> para tener tu saldo 100% al día.`
-        ],
-        botonTexto: 'Cerrar Ventana',
-        botonesExtra: [
-          {
-            texto: '📋 Copiar Enlace Sincronizado',
-            estilo: 'background: rgba(56, 189, 248, 0.25); border: 1.5px solid #38bdf8; color: #38bdf8;',
-            onClick: () => {
-              if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(link).then(() => {
-                  mostrarToast('📋 ¡Enlace copiado al portapapeles! Pégalo en tu celular o navegador.', 'success', 4000);
-                }).catch(() => {
-                  prompt('Copia este enlace de sincronización:', link);
-                });
-              } else {
-                prompt('Copia este enlace de sincronización:', link);
-              }
-            }
+        const cloudTs = data.lastUpdated || 0;
+        if (forzar || cloudTs > ultimaActualizacionNube) {
+          ultimaActualizacionNube = cloudTs;
+          let cambio = false;
+
+          if (typeof data.bankroll === 'number' && data.bankroll !== bankrollTotal) {
+            bankrollTotal = data.bankroll;
+            localStorage.setItem('bankroll_total', bankrollTotal);
+            cambio = true;
           }
-        ]
-      });
+          if (typeof data.deuda === 'number' && data.deuda !== deudaRecuperacion) {
+            deudaRecuperacion = data.deuda;
+            localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
+            cambio = true;
+          }
+          if (Array.isArray(data.movimientos) && JSON.stringify(data.movimientos) !== JSON.stringify(movimientos)) {
+            movimientos = data.movimientos;
+            localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
+            cambio = true;
+          }
+          if (Array.isArray(data.apuestasActivas) && JSON.stringify(data.apuestasActivas) !== JSON.stringify(apuestasActivas)) {
+            apuestasActivas = data.apuestasActivas;
+            localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
+            cambio = true;
+          }
+
+          if (cambio) {
+            renderDashboard();
+            renderApuestasActivas();
+            analizarLinkBetano();
+            console.log('⚡ Sincronización en tiempo real aplicada desde la nube:', data);
+          }
+        }
+
+        if (elInd) {
+          elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Base de Datos en Tiempo Real (Nube & GitHub Sincronizado)';
+          elInd.style.color = '#34d399';
+        }
+      } catch (err) {
+        cargarDesdeGitHubFallback();
+      }
+    }
+
+    async function cargarDesdeGitHubFallback() {
+      try {
+        const res = await fetch('datos_apuestas.json?_t=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) {
+          const ghData = await res.json();
+          if (ghData.bankroll && !localStorage.getItem('bankroll_total')) {
+            bankrollTotal = ghData.bankroll;
+            deudaRecuperacion = ghData.deuda || 0;
+            movimientos = ghData.movimientos || [];
+            apuestasActivas = ghData.apuestasActivas || [];
+            renderDashboard();
+            renderApuestasActivas();
+          }
+        }
+      } catch (e) {}
     }
 
     function sincronizarConTelegramCloud(modo = 'leer') {
@@ -4279,31 +4329,23 @@
           apuestasActivas: apuestasActivas,
           ts: Date.now()
         });
-        cs.setItem('bankroll_master_state', payload, (err, ok) => {
-          if (!err && ok) console.log('Telegram CloudStorage guardado exitosamente.');
-        });
+        cs.setItem('bankroll_master_state', payload, () => {});
       } else if (modo === 'leer') {
         cs.getItem('bankroll_master_state', (err, val) => {
           if (!err && val) {
             try {
               const data = JSON.parse(val);
-              const urlP = new URLSearchParams(window.location.search);
-              if (!urlP.get('bank') && !urlP.get('sync_data')) {
-                if (data.bankroll) bankrollTotal = data.bankroll;
-                if (data.deuda !== undefined) deudaRecuperacion = data.deuda;
-                if (data.movimientos) movimientos = data.movimientos;
-                if (data.apuestasActivas) apuestasActivas = data.apuestasActivas;
-                localStorage.setItem('bankroll_total', bankrollTotal);
-                localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
-                localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
-                localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
-                renderDashboard();
-                renderApuestasActivas();
-                console.log('Sincronizado desde Telegram CloudStorage:', data);
-              }
-            } catch (e) {
-              console.error('Error parseando Telegram CloudStorage:', e);
-            }
+              if (data.bankroll) bankrollTotal = data.bankroll;
+              if (data.deuda !== undefined) deudaRecuperacion = data.deuda;
+              if (data.movimientos) movimientos = data.movimientos;
+              if (data.apuestasActivas) apuestasActivas = data.apuestasActivas;
+              localStorage.setItem('bankroll_total', bankrollTotal);
+              localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
+              localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
+              localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
+              renderDashboard();
+              renderApuestasActivas();
+            } catch (e) {}
           }
         });
       }
@@ -4317,9 +4359,7 @@
         if (typeof window.Telegram.WebApp.requestFullscreen === 'function') {
           window.Telegram.WebApp.requestFullscreen();
         }
-      } catch (e) {
-        console.log('Telegram WebApp expand note:', e);
-      }
+      } catch (e) {}
     }
 
     // Leer parámetros de URL si viene desde Telegram o link directo
@@ -4328,7 +4368,6 @@
     const paramCuota = urlParams.get('cuota');
     const paramPerdida = urlParams.get('perdida') || urlParams.get('deuda');
     const paramBank = urlParams.get('bank') || urlParams.get('bankroll');
-    const paramSyncData = urlParams.get('sync_data');
 
     if (paramBank) {
       const b = parseFloat(paramBank);
@@ -4346,30 +4385,21 @@
       }
     }
 
-    if (paramSyncData) {
-      try {
-        const decodedStr = decodeURIComponent(escape(atob(decodeURIComponent(paramSyncData))));
-        const parsed = JSON.parse(decodedStr);
-        if (parsed.bankroll) bankrollTotal = parsed.bankroll;
-        if (parsed.deuda !== undefined) deudaRecuperacion = parsed.deuda;
-        if (parsed.movimientos && Array.isArray(parsed.movimientos)) movimientos = parsed.movimientos;
-        if (parsed.apuestasActivas && Array.isArray(parsed.apuestasActivas)) apuestasActivas = parsed.apuestasActivas;
-        localStorage.setItem('bankroll_total', bankrollTotal);
-        localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
-        localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
-        localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
-        setTimeout(() => mostrarToast('✅ ¡Datos sincronizados al 100% desde tu otro dispositivo!', 'success', 5000), 400);
-      } catch (err) {
-        console.error('Error importando sync_data:', err);
-      }
-    }
-
     if (paramCode) {
       document.getElementById('betanoLinkInput').value = `https://www.betano.co/bookingcode/${paramCode}/`;
     }
 
-    // Sincronizar desde Telegram Cloud si está disponible
-    sincronizarConTelegramCloud('leer');
+    // Cargar automáticamente en tiempo real desde la nube
+    cargarEstadoDesdeNube(true);
+
+    // Auto-sincronizar continuamente cada 4 segundos
+    setInterval(() => cargarEstadoDesdeNube(false), 4000);
+
+    // Sincronizar automáticamente al cambiar de pestaña o desbloquear celular
+    window.addEventListener('focus', () => cargarEstadoDesdeNube(false));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') cargarEstadoDesdeNube(false);
+    });
 
     // Inicializar interfaz
     document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion || 0);

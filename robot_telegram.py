@@ -925,10 +925,59 @@ def handle_callback_query(cq):
         elif accion == "anulada":
             send_message(chat_id, f"⚪ *Boleto #{code} ANULADO (Reembolso)*\nRegistra el reintegro a tu caja:\n`/anulada [monto] Boleto #{code}`\n_Ejemplo:_ `/anulada 20000 Boleto #{code}`")
 
+# Servidor HTTP local para sincronización bidireccional inmediata con GitHub
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class SyncHTTPHandler(BaseHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def do_POST(self):
+        if self.path == '/api/save':
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            try:
+                data = json.loads(body.decode('utf-8'))
+                json_path = os.path.join(os.path.dirname(__file__), 'datos_apuestas.json')
+                with open(json_path, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
+                threading.Thread(target=push_github_background).start()
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"status":"ok"}')
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+
+    def log_message(self, format, *args):
+        pass  # Silenciar logs para no saturar
+
+def push_github_background():
+    try:
+        repo_dir = os.path.dirname(__file__)
+        os.system(f'git -C "{repo_dir}" add datos_apuestas.json && git -C "{repo_dir}" commit -m "sync: live data" && git -C "{repo_dir}" push origin main')
+    except Exception as e:
+        print("Error en push_github_background:", e)
+
+def start_http_server():
+    try:
+        server = HTTPServer(('127.0.0.1', 8080), SyncHTTPHandler)
+        server.serve_forever()
+    except Exception as e:
+        pass
+
 # Bucle principal de polling
 def run_bot():
     init_db()
-    print("🤖 Robot de Telegram iniciando con soporte para Recuperación, Fotos y 4 Resultados...")
+    threading.Thread(target=start_http_server, daemon=True).start()
+    print("🤖 Robot de Telegram iniciando con soporte para Recuperación, Fotos y Servidor de Sincronización GitHub...")
     last_update_id = 0
     while True:
         try:

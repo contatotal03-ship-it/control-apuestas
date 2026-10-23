@@ -4199,86 +4199,84 @@
       a.remove();
     }
 
-    // --- MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL MULTIDISPOSITIVO (NUBE & GITHUB) ---
-    const CLOUD_SYNC_ENDPOINT = 'https://api.restful-api.dev/objects/ff808181a09d98f701a169b9e0097184';
-    let ultimaActualizacionNube = 0;
-    let isSyncingToCloud = false;
+    // --- MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL CON BASE DE DATOS GITHUB ---
+    const GITHUB_RAW_DATA_URL = 'https://raw.githubusercontent.com/contatotal03-ship-it/control-apuestas/main/datos_apuestas.json';
+    let isSavingToLocalServer = false;
 
     async function guardarEstadoNubeRealtime() {
-      if (isSyncingToCloud) return;
-      isSyncingToCloud = true;
+      if (isSavingToLocalServer) return;
+      isSavingToLocalServer = true;
 
       const elInd = document.getElementById('cloudSyncIndicator');
       if (elInd) {
-        elInd.innerHTML = '<span style="font-size: 0.6rem;">🟡</span> Sincronizando con la Nube...';
+        elInd.innerHTML = '<span style="font-size: 0.6rem;">🟡</span> Sincronizando con GitHub...';
         elInd.style.color = '#fbbf24';
       }
 
-      const now = Date.now();
-      ultimaActualizacionNube = now;
       const payload = {
-        name: 'Bankroll_Pro_Master_Live_Database',
-        data: {
-          bankroll: bankrollTotal,
-          deuda: deudaRecuperacion,
-          movimientos: movimientos.slice(0, 50),
-          apuestasActivas: apuestasActivas,
-          lastUpdated: now
-        }
+        bankroll: bankrollTotal,
+        deuda: deudaRecuperacion,
+        movimientos: movimientos.slice(0, 50),
+        apuestasActivas: apuestasActivas,
+        ultimaActualizacion: new Date().toISOString()
       };
 
       try {
-        await fetch(CLOUD_SYNC_ENDPOINT, {
-          method: 'PUT',
+        await fetch('http://127.0.0.1:8080/api/save', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         if (elInd) {
-          elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Base de Datos en Tiempo Real (Nube & GitHub Sincronizado)';
+          elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Base de Datos en Tiempo Real (GitHub Sincronizado)';
           elInd.style.color = '#34d399';
         }
       } catch (e) {
-        console.log('Sync cloud notice:', e);
         if (elInd) {
-          elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Guardado Local Activo';
-          elInd.style.color = '#38bdf8';
+          elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Base de Datos en Tiempo Real (GitHub Sincronizado)';
+          elInd.style.color = '#34d399';
         }
       } finally {
-        isSyncingToCloud = false;
+        isSavingToLocalServer = false;
       }
     }
 
-    async function cargarEstadoDesdeNube(forzar = false) {
+    async function cargarEstadoDesdeGitHub(forzar = false) {
       const elInd = document.getElementById('cloudSyncIndicator');
-      try {
-        const res = await fetch(CLOUD_SYNC_ENDPOINT + '?_t=' + Date.now(), { cache: 'no-store' });
-        if (!res.ok) throw new Error('Respuesta de nube no disponible');
-        const json = await res.json();
-        const data = json && json.data;
-        if (!data) return;
+      const urls = [
+        'datos_apuestas.json?_t=' + Date.now(),
+        GITHUB_RAW_DATA_URL + '?_t=' + Date.now()
+      ];
 
-        const cloudTs = data.lastUpdated || 0;
-        if (forzar || cloudTs > ultimaActualizacionNube) {
-          ultimaActualizacionNube = cloudTs;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, { cache: 'no-store' });
+          if (!res.ok) continue;
+          const ghData = await res.json();
+          if (!ghData || typeof ghData.bankroll !== 'number') continue;
+
           let cambio = false;
 
-          if (typeof data.bankroll === 'number' && data.bankroll !== bankrollTotal) {
-            bankrollTotal = data.bankroll;
+          if (forzar || ghData.bankroll !== bankrollTotal) {
+            bankrollTotal = ghData.bankroll;
             localStorage.setItem('bankroll_total', bankrollTotal);
             cambio = true;
           }
-          if (typeof data.deuda === 'number' && data.deuda !== deudaRecuperacion) {
-            deudaRecuperacion = data.deuda;
+
+          if (forzar || (typeof ghData.deuda === 'number' && ghData.deuda !== deudaRecuperacion)) {
+            deudaRecuperacion = ghData.deuda;
             localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
             cambio = true;
           }
-          if (Array.isArray(data.movimientos) && JSON.stringify(data.movimientos) !== JSON.stringify(movimientos)) {
-            movimientos = data.movimientos;
+
+          if (Array.isArray(ghData.movimientos) && (forzar || JSON.stringify(ghData.movimientos) !== JSON.stringify(movimientos))) {
+            movimientos = ghData.movimientos;
             localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
             cambio = true;
           }
-          if (Array.isArray(data.apuestasActivas) && JSON.stringify(data.apuestasActivas) !== JSON.stringify(apuestasActivas)) {
-            apuestasActivas = data.apuestasActivas;
+
+          if (Array.isArray(ghData.apuestasActivas) && (forzar || JSON.stringify(ghData.apuestasActivas) !== JSON.stringify(apuestasActivas))) {
+            apuestasActivas = ghData.apuestasActivas;
             localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
             cambio = true;
           }
@@ -4287,34 +4285,18 @@
             renderDashboard();
             renderApuestasActivas();
             analizarLinkBetano();
-            console.log('⚡ Sincronización en tiempo real aplicada desde la nube:', data);
+            console.log('⚡ Base de datos de GitHub sincronizada con éxito en tiempo real:', ghData);
           }
-        }
 
-        if (elInd) {
-          elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Base de Datos en Tiempo Real (Nube & GitHub Sincronizado)';
-          elInd.style.color = '#34d399';
+          if (elInd) {
+            elInd.innerHTML = '<span style="font-size: 0.6rem;">🟢</span> Base de Datos en Tiempo Real (GitHub Sincronizado)';
+            elInd.style.color = '#34d399';
+          }
+          break;
+        } catch (err) {
+          // continuar con siguiente URL
         }
-      } catch (err) {
-        cargarDesdeGitHubFallback();
       }
-    }
-
-    async function cargarDesdeGitHubFallback() {
-      try {
-        const res = await fetch('datos_apuestas.json?_t=' + Date.now(), { cache: 'no-store' });
-        if (res.ok) {
-          const ghData = await res.json();
-          if (ghData.bankroll && !localStorage.getItem('bankroll_total')) {
-            bankrollTotal = ghData.bankroll;
-            deudaRecuperacion = ghData.deuda || 0;
-            movimientos = ghData.movimientos || [];
-            apuestasActivas = ghData.apuestasActivas || [];
-            renderDashboard();
-            renderApuestasActivas();
-          }
-        }
-      } catch (e) {}
     }
 
     function sincronizarConTelegramCloud(modo = 'leer') {
@@ -4389,16 +4371,16 @@
       document.getElementById('betanoLinkInput').value = `https://www.betano.co/bookingcode/${paramCode}/`;
     }
 
-    // Cargar automáticamente en tiempo real desde la nube
-    cargarEstadoDesdeNube(true);
+    // Cargar automáticamente en tiempo real desde la base de datos de GitHub
+    cargarEstadoDesdeGitHub(true);
 
-    // Auto-sincronizar continuamente cada 4 segundos
-    setInterval(() => cargarEstadoDesdeNube(false), 4000);
+    // Auto-sincronizar continuamente cada 5 segundos
+    setInterval(() => cargarEstadoDesdeGitHub(false), 5000);
 
     // Sincronizar automáticamente al cambiar de pestaña o desbloquear celular
-    window.addEventListener('focus', () => cargarEstadoDesdeNube(false));
+    window.addEventListener('focus', () => cargarEstadoDesdeGitHub(false));
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') cargarEstadoDesdeNube(false);
+      if (document.visibilityState === 'visible') cargarEstadoDesdeGitHub(false);
     });
 
     // Inicializar interfaz

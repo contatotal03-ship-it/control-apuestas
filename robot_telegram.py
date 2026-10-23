@@ -266,7 +266,9 @@ def handle_message(msg):
                 "¿Cuál fue el resultado real de tu jugada en Betano?\n\n"
                 "Selecciona una opción para actualizar tu caja y bankroll:"
             )
-            web_url = "https://contatotal03-ship-it.github.io/control-apuestas/"
+            bankroll = get_user_bankroll(user_id)
+            deuda = get_user_debt(user_id)
+            web_url = f"https://contatotal03-ship-it.github.io/control-apuestas/?bank={int(bankroll)}&deuda={int(deuda)}&uid={user_id}"
             reply_markup_foto = {
                 "inline_keyboard": [
                     [
@@ -278,7 +280,7 @@ def handle_message(msg):
                         {"text": "⚪ Anulada / Reembolso", "callback_data": "help_anulada"}
                     ],
                     [
-                        {"text": "📱 Abrir en Calculadora Web (Escanear OCR)", "url": web_url}
+                        {"text": "📱 Abrir en Calculadora Web Sincronizada", "url": web_url}
                     ]
                 ]
             }
@@ -341,7 +343,7 @@ def handle_message(msg):
                 f"👉 Cuota @{cuota:.2f}: apuesta Stake 1 (1%): *${bankroll*0.01:,.0f} COP* (Ganancia neta: ${bankroll*0.01*(cuota-1):,.0f} COP).\n"
             )
 
-        web_url = f"https://contatotal03-ship-it.github.io/control-apuestas/?code={code}&cuota={cuota}&perdida={deuda}"
+        web_url = f"https://contatotal03-ship-it.github.io/control-apuestas/?code={code}&cuota={cuota}&perdida={int(deuda)}&bank={int(bankroll)}&uid={user_id}"
         msg_betano_link = (
             "🎫 *BOLETO DE BETANO DETECTADO EN TIEMPO REAL*\n"
             "━━━━━━━━━━━━━━━━━━━━━\n"
@@ -366,7 +368,7 @@ def handle_message(msg):
                     {"text": "⚪ Anulada", "callback_data": f"res_anulada_{code}"}
                 ],
                 [
-                    {"text": "📱 Ver en Calculadora Web", "url": web_url}
+                    {"text": "📱 Ver en Calculadora Web Sincronizada", "url": web_url}
                 ]
             ]
         }
@@ -401,14 +403,39 @@ def handle_message(msg):
         )
         reply_markup = {
             "keyboard": [
-                [{"text": "📊 Ver Balance"}, {"text": "🛡️ Ejemplo Recuperar 80k"}],
-                [{"text": "🎯 Mi Bankroll"}, {"text": "🏆 Mis Canales VIP"}]
+                [{"text": "📱 Abrir Calculadora Web"}, {"text": "📊 Ver Balance"}],
+                [{"text": "🎯 Mi Bankroll"}, {"text": "🛡️ Ejemplo Recuperar 80k"}],
+                [{"text": "🏆 Mis Canales VIP"}]
             ],
             "resize_keyboard": True
         }
         send_message(chat_id, ayuda_text, reply_markup=reply_markup)
 
     # Botones de Texto Rápido
+    elif text in ["📱 Abrir Calculadora Web", "📱 Calculadora Web", "/panel", "/web", "/app", "/calc", "/calculadora", "/sync"]:
+        bank = get_user_bankroll(user_id)
+        deuda = get_user_debt(user_id)
+        web_url = f"https://contatotal03-ship-it.github.io/control-apuestas/?bank={int(bank)}&deuda={int(deuda)}&uid={user_id}"
+        msg_panel = (
+            "📱 *CALCULADORA WEB MASTER PRO &middot; 100% SINCRONIZADA*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💰 *Bankroll Sincronizado:* ${bank:,.0f} COP\n"
+            f"📊 *Déficit Pendiente:* ${deuda:,.0f} COP\n\n"
+            "Pulsa el botón de abajo para abrir la aplicación web en tu celular o PC con tu saldo y deudas en tiempo real:"
+        ).replace(",", ".")
+        reply_markup_panel = {
+            "inline_keyboard": [
+                [
+                    {"text": "🚀 Abrir Calculadora Web (Mini App)", "web_app": {"url": web_url}}
+                ],
+                [
+                    {"text": "🌐 Abrir en Navegador Externo (Chrome/Safari)", "url": web_url}
+                ]
+            ]
+        }
+        send_message(chat_id, msg_panel, reply_markup=reply_markup_panel)
+        conn.close()
+        return
     elif text == "📊 Ver Balance":
         handle_message({"chat": {"id": chat_id}, "from": {"id": user_id}, "text": "/balance"})
         return

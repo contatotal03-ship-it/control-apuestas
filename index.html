@@ -1475,27 +1475,45 @@
       const notes = document.getElementById('proModalNotes');
       const actions = document.getElementById('proModalActions');
 
-      card.className = 'pro-modal-card tipo-cashout';
+      const accentColor = config.accentColor || (config.tipo === 'bankroll' ? '#38bdf8' : (config.tipo === 'deuda' ? '#ef4444' : '#f59e0b'));
+      const bgAccent = config.bgAccent || (config.tipo === 'bankroll' ? 'rgba(56, 189, 248, 0.15)' : (config.tipo === 'deuda' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)'));
+
+      card.className = 'pro-modal-card' + (config.tipo ? ` tipo-${config.tipo}` : ' tipo-cashout');
       badgeWrap.style.display = 'flex';
       badgeText.innerText = config.badge || 'INGRESO DE VALOR';
-      badge.style.background = 'rgba(245, 158, 11, 0.15)';
-      badge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-      badge.style.color = '#fbbf24';
+      badge.style.background = bgAccent;
+      badge.style.borderColor = accentColor;
+      badge.style.color = accentColor;
 
       icon.innerText = config.icon || '💵';
-      title.innerHTML = config.titulo || 'Monto de Cierre Anticipado';
+      title.innerHTML = config.titulo || 'Modificar Valor';
       subtitle.innerHTML = config.subtitulo || '';
       grid.style.display = 'none';
       grid.innerHTML = '';
 
+      const atajosHtml = (config.atajos && config.atajos.length > 0) ? `
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.75rem;">
+          ${config.atajos.map(a => `
+            <button type="button" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #cbd5e1; border-radius: 9999px; padding: 0.28rem 0.65rem; font-size: 0.74rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='${accentColor}'; this.style.color='#fff';" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'; this.style.color='#cbd5e1';" onclick="document.getElementById('proModalInputVal').value = ${a}; document.getElementById('proModalLivePreview').innerText = formatCOP(${a});">
+              ${formatCOP(a)}
+            </button>
+          `).join('')}
+        </div>
+      ` : '';
+
       notes.style.display = 'block';
       notes.innerHTML = `
-        <div style="margin-bottom: 0.65rem; color: #cbd5e1; font-size: 0.82rem;">
-          ${config.instruccion || 'Ingresa el valor exacto recibido de Betano ($ COP):'}
+        <div style="margin-bottom: 0.55rem; color: #cbd5e1; font-size: 0.83rem;">
+          ${config.instruccion || 'Ingresa el valor ($ COP):'}
         </div>
         <div style="position: relative;">
-          <input type="number" id="proModalInputVal" value="${config.valorDefault || ''}" placeholder="${config.placeholder || 'Ej: 35000'}" style="width: 100%; padding: 0.8rem 1rem; font-size: 1.15rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.55); border: 1.5px solid #f59e0b; border-radius: 0.65rem; color: #fff; outline: none; box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);">
+          <input type="number" id="proModalInputVal" value="${config.valorDefault || ''}" placeholder="${config.placeholder || 'Ej: 1000000'}" style="width: 100%; padding: 0.85rem 1.15rem; font-size: 1.25rem; font-weight: 900; font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.65); border: 2px solid ${accentColor}; border-radius: 0.75rem; color: #fff; outline: none; box-shadow: 0 0 16px ${accentColor}40;">
         </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; font-size: 0.76rem; color: #94a3b8;">
+          <span>Formato oficial en tiempo real:</span>
+          <strong id="proModalLivePreview" style="color: ${accentColor}; font-family: 'JetBrains Mono', monospace; font-size: 0.96rem;">${formatCOP(config.valorDefault || 0)}</strong>
+        </div>
+        ${atajosHtml}
       `;
 
       modalCallbackConfirm = () => {
@@ -1509,7 +1527,7 @@
         <button type="button" class="pro-btn-secondary" onclick="cerrarProModal()">
           ${config.botonCancelar || 'Cancelar'}
         </button>
-        <button type="button" class="pro-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);" onclick="ejecutarAccionModalConfirm()">
+        <button type="button" class="pro-btn-primary" style="background: linear-gradient(135deg, ${accentColor}, ${accentColor}cc); box-shadow: 0 8px 24px ${accentColor}40;" onclick="ejecutarAccionModalConfirm()">
           <span>${config.botonConfirmar || 'Confirmar y Guardar'} 🚀</span>
         </button>
       `;
@@ -1517,7 +1535,24 @@
       overlay.classList.add('active');
       setTimeout(() => {
         const inp = document.getElementById('proModalInputVal');
-        if (inp) { inp.focus(); inp.select(); }
+        if (inp) {
+          inp.focus();
+          inp.select();
+          inp.addEventListener('input', (e) => {
+            const v = parseFloat(e.target.value) || 0;
+            const prev = document.getElementById('proModalLivePreview');
+            if (prev) prev.innerText = formatCOP(v);
+          });
+          inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              ejecutarAccionModalConfirm();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              cerrarProModal();
+            }
+          });
+        }
       }, 100);
     }
 
@@ -3758,26 +3793,57 @@
     }
 
     function ajustarBankrollModal() {
-      const nuevo = prompt('Ingresa tu Bankroll actual ($ COP):', Math.round(bankrollTotal));
-      if (nuevo !== null) {
-        const val = parseFloat(nuevo.replace(/\./g, '').replace(/,/g, ''));
-        if (val && !isNaN(val) && val > 0) {
-          bankrollTotal = val;
-          guardarEstado();
+      mostrarModalInputPro({
+        badge: 'GESTIÓN DE CAPITAL VIP',
+        icon: '💰',
+        tipo: 'bankroll',
+        accentColor: '#38bdf8',
+        titulo: 'Modificar Bankroll Actual',
+        subtitulo: 'Capital total disponible para tu operativa y gestión de stakes disciplinados',
+        instruccion: 'Ingresa tu saldo real en caja ($ COP):',
+        placeholder: 'Ej: 1000000',
+        valorDefault: Math.round(bankrollTotal),
+        botonConfirmar: 'Actualizar Bankroll',
+        atajos: [100000, 200000, 500000, 1000000, 2000000],
+        onConfirm: (valStr) => {
+          const val = parseFloat(valStr.replace(/\./g, '').replace(/,/g, ''));
+          if (val && !isNaN(val) && val > 0) {
+            bankrollTotal = val;
+            guardarEstado();
+            renderDashboard();
+            mostrarToast(`Bankroll actualizado con éxito a ${formatCOP(bankrollTotal)}`, 'success');
+          } else {
+            mostrarToast('Por favor ingresa un monto válido mayor a 0.', 'warning');
+          }
         }
-      }
+      });
     }
 
     function ajustarDeudaModal() {
-      const nuevo = prompt('Ingresa el Déficit actual que deseas recuperar ($ COP):', Math.round(deudaRecuperacion));
-      if (nuevo !== null) {
-        const val = parseFloat(nuevo.replace(/\./g, '').replace(/,/g, ''));
-        if (!isNaN(val) && val >= 0) {
-          deudaRecuperacion = val;
-          document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion);
-          guardarEstado();
+      mostrarModalInputPro({
+        badge: 'ESCUDO DE RECUPERACIÓN',
+        icon: '🛡️',
+        tipo: 'deuda',
+        accentColor: '#ef4444',
+        titulo: 'Modificar Déficit / Costo a Recuperar',
+        subtitulo: 'Monto total de pérdidas pendientes que la calculadora debe rescatar con la próxima jugada',
+        instruccion: 'Ingresa el valor pendiente por recuperar ($ COP):',
+        placeholder: 'Ej: 80000',
+        valorDefault: Math.round(deudaRecuperacion),
+        botonConfirmar: 'Actualizar Déficit',
+        atajos: [0, 20000, 50000, 80000, 120000],
+        onConfirm: (valStr) => {
+          const val = parseFloat(valStr.replace(/\./g, '').replace(/,/g, ''));
+          if (!isNaN(val) && val >= 0) {
+            deudaRecuperacion = val;
+            const dynP = document.getElementById('dynPerdida');
+            if (dynP) dynP.value = Math.round(deudaRecuperacion);
+            guardarEstado();
+            renderDashboard();
+            mostrarToast(val === 0 ? '¡Caja libre de deudas! ($0 COP)' : `Déficit a recuperar actualizado a ${formatCOP(deudaRecuperacion)}`, 'info');
+          }
         }
-      }
+      });
     }
 
     function guardarAjusteBank() {

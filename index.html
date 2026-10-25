@@ -671,18 +671,20 @@
 
     <!-- LIVE DASHBOARD -->
     <div class="live-dashboard">
-      <div class="kpi-box kpi-bank">
-        <div class="kpi-label">
-          <span>Bankroll Real</span>
-          <span style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
-            <button type="button" onclick="recargarCajaModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; border-radius: 0.35rem; padding: 0.15rem 0.45rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;" title="Ingresar recarga / depósito">➕ Recargar</button>
-            <button type="button" onclick="retirarCajaModal()" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #c084fc; border-radius: 0.35rem; padding: 0.15rem 0.45rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;" title="Sacar dinero de Betano a tu banco">🏦 Retirar</button>
-            <button type="button" onclick="conciliarBetanoModal()" style="background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 0.35rem; padding: 0.15rem 0.45rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;" title="Auditar y conciliar con Betano">⚖️ Conciliar</button>
-            <span style="cursor: pointer; color: #38bdf8;" onclick="ajustarBankrollModal()" title="Editar Bankroll">✏️</span>
-          </span>
+      <div class="kpi-box kpi-bank" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div class="kpi-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+            <span style="font-weight: 800; letter-spacing: 0.5px;">Bankroll Real</span>
+            <span style="cursor: pointer; color: #38bdf8; font-size: 0.95rem; opacity: 0.8;" onclick="ajustarBankrollModal()" title="Editar Saldo">✏️</span>
+          </div>
+          <div class="kpi-val" id="liveBankroll" style="color: #38bdf8; font-size: 1.8rem; font-weight: 900; line-height: 1.1;">$ 0 COP</div>
+          <div class="kpi-sub" id="liveBankrollSub" style="margin-top: 0.25rem;">Stake 1 (1%) = $ 0 COP</div>
         </div>
-        <div class="kpi-val" id="liveBankroll" style="color: #38bdf8;">$ 0 COP</div>
-        <div class="kpi-sub" id="liveBankrollSub">Stake 1 (1%) = $ 0 COP</div>
+        <div style="display: flex; gap: 0.35rem; margin-top: 0.75rem; flex-wrap: wrap;">
+          <button type="button" onclick="recargarCajaModal()" style="flex: 1; min-width: 68px; background: rgba(16, 185, 129, 0.18); border: 1.5px solid #10b981; color: #34d399; border-radius: 0.5rem; padding: 0.35rem 0.45rem; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.2rem; transition: all 0.2s;" title="Ingresar recarga / depósito">➕ Recargar</button>
+          <button type="button" onclick="retirarCajaModal()" style="flex: 1; min-width: 65px; background: rgba(168, 85, 247, 0.18); border: 1.5px solid #a855f7; color: #c084fc; border-radius: 0.5rem; padding: 0.35rem 0.45rem; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.2rem; transition: all 0.2s;" title="Sacar dinero a tu banco">🏦 Retirar</button>
+          <button type="button" onclick="conciliarBetanoModal()" style="flex: 1; min-width: 72px; background: rgba(56, 189, 248, 0.18); border: 1.5px solid #38bdf8; color: #38bdf8; border-radius: 0.5rem; padding: 0.35rem 0.45rem; font-size: 0.72rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.2rem; transition: all 0.2s;" title="Auditar y conciliar con Betano">⚖️ Conciliar</button>
+        </div>
       </div>
 
       <div class="kpi-box kpi-debt" id="boxDeuda">
@@ -1849,11 +1851,23 @@
             const jsonRes = await resp.json();
             if (jsonRes && jsonRes.success && jsonRes.data) {
               const d = jsonRes.data;
-              resultadosLote.push({ file: file.name, data: d });
-              const st = d.status || 'en_juego';
               const stake = d.stake || 0;
               const payout = d.payout || 0;
               const net = d.net || 0;
+              let st = d.status || 'Ganada';
+
+              // Descartar boletos sin dinero o capturas vacías
+              if (stake <= 0 && payout <= 0 && net === 0) continue;
+
+              // En Betano las apuestas ya resueltas nunca están 'en juego'
+              if (st === 'en_juego') {
+                if (payout === 0 && net < 0) st = 'Perdida';
+                else if (payout > 0) st = 'Ganada';
+                else continue;
+              }
+
+              d.status = st;
+              resultadosLote.push({ file: file.name, data: d });
 
               if (st === 'Ganada') ganadasCount++;
               else if (st === 'Perdida') perdidasCount++;
@@ -1872,7 +1886,7 @@
       if (ocrBox) ocrBox.style.display = 'none';
 
       if (resultadosLote.length === 0) {
-        return mostrarToast('No se pudieron procesar las imágenes en lote.', 'warning');
+        return mostrarToast('No se detectaron boletos válidos con montos en las imágenes.', 'warning');
       }
 
       mostrarCelebracionModal({
@@ -1880,7 +1894,7 @@
         badge: `PROCESAMIENTO POR LOTE (${resultadosLote.length} BOLETOS)`,
         icon: '📑',
         titulo: `¡${resultadosLote.length} Boletos Escaneados con Éxito!`,
-        subtitulo: `Resumen de Capturas Analizadas`,
+        subtitulo: `Resumen de Capturas Analizadas (100% Finalizadas)`,
         metrics: [
           { label: 'Total Boletos', valor: `${resultadosLote.length} boletos`, color: '#38bdf8' },
           { label: 'Desglose', valor: `🟢 ${ganadasCount}G | 🔴 ${perdidasCount}P | 🟡 ${cashoutCount}C`, color: '#fbbf24' },
@@ -1895,41 +1909,68 @@
         botonTexto: `📥 Importar y Aplicar Todos (${resultadosLote.length} Boletos)`,
         onConfirm: () => {
           const fechaStr = new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+          let boletosImportados = 0;
+          let netoEfectivo = 0;
+
           resultadosLote.forEach((item, idx) => {
             const d = item.data;
-            const code = 'LOT_' + Date.now().toString().slice(-4) + '_' + (idx + 1);
-            const st = d.status || 'en_juego';
             const cuota = d.cuota || 1.80;
             const stake = d.stake || 0;
             const payout = d.payout || 0;
             const net = d.net || 0;
             const partido = d.partido || 'Boleto Betano';
+            let st = d.status || 'Ganada';
+
+            if (stake <= 0 && payout <= 0 && net === 0) return;
+            if (st === 'en_juego') st = (payout === 0 && net < 0) ? 'Perdida' : 'Ganada';
+
+            // Evitar duplicados si ya existen en el historial
+            const yaExiste = movimientos.some(m => 
+              m.invertido === stake && m.retorno === payout && m.neto === net && Math.abs((m.cuota || 0) - cuota) < 0.05
+            );
+            if (yaExiste) return;
+
+            const code = 'LOT_' + Date.now().toString().slice(-4) + '_' + (idx + 1);
+            let tipoFinal = 'Apuesta Ganada';
+            let catFinal = 'ganada';
+            if (st === 'Perdida' || (payout === 0 && net < 0)) {
+              tipoFinal = 'Apuesta Perdida';
+              catFinal = 'perdida';
+            } else if (st === 'Cashout') {
+              tipoFinal = 'Cash Out Betano';
+              catFinal = 'cashout';
+            }
 
             movimientos.unshift({
               id: Date.now() + idx,
               code: code,
               fecha: fechaStr,
-              tipo: st === 'Ganada' ? 'Apuesta Ganada' : (st === 'Perdida' ? 'Apuesta Perdida' : (st === 'Cashout' ? 'Cash Out Betano' : 'Apuesta en Juego')),
-              categoria: st === 'Ganada' ? 'ganada' : (st === 'Perdida' ? 'perdida' : 'anulada'),
+              tipo: tipoFinal,
+              categoria: catFinal,
               concepto: `${partido} (@ ${cuota.toFixed(2)})`,
               cuota: cuota,
               invertido: stake,
               retorno: payout,
               neto: net
             });
+
+            boletosImportados++;
+            netoEfectivo += net;
           });
 
-          bankrollTotal += totalNetoLote;
-          if (totalNetoLote < 0) {
-            deudaRecuperacion += Math.abs(totalNetoLote);
-          } else if (totalNetoLote > 0 && deudaRecuperacion > 0) {
-            deudaRecuperacion = Math.max(0, deudaRecuperacion - totalNetoLote);
+          if (boletosImportados > 0) {
+            bankrollTotal += netoEfectivo;
+            if (netoEfectivo < 0) {
+              deudaRecuperacion += Math.abs(netoEfectivo);
+            } else if (netoEfectivo > 0 && deudaRecuperacion > 0) {
+              deudaRecuperacion = Math.max(0, deudaRecuperacion - netoEfectivo);
+            }
           }
 
           guardarEstado();
           renderDashboard();
           switchTab('historial');
-          mostrarToast(`¡${resultadosLote.length} boletos importados con éxito a tu caja!`, 'success');
+          mostrarToast(`¡${boletosImportados} boletos importados con éxito a tu caja!`, 'success');
         }
       });
     }
@@ -4640,7 +4681,13 @@
       let cashouts = 0;
       let retirosBanco = 0;
 
-      movimientos.forEach(m => {
+      // Filtrar movimientos válidos (descartar registros vacíos de $0)
+      const movimientosValidos = movimientos.filter(m => !(m.invertido === 0 && m.retorno === 0 && m.neto === 0));
+      if (movimientosValidos.length === 0) {
+        return mostrarToast('No hay apuestas ni movimientos en el historial para exportar.', 'warning');
+      }
+
+      movimientosValidos.forEach(m => {
         const esRetiro = m.categoria === 'retiro' || (m.tipo && m.tipo.includes('Retiro'));
         if (esRetiro) {
           retirosBanco += (m.invertido || 0);
@@ -4648,9 +4695,9 @@
           totalInvertido += (m.invertido || 0);
           totalCobrado += (m.retorno || 0);
           beneficioNeto += (m.neto || 0);
-          if (m.categoria === 'ganada') ganadas++;
-          else if (m.categoria === 'perdida') perdidas++;
-          else if (m.categoria === 'cashout') cashouts++;
+          if (m.categoria === 'ganada' || m.neto > 0) ganadas++;
+          else if (m.categoria === 'perdida' || m.neto < 0) perdidas++;
+          else if (m.categoria === 'cashout' || (m.tipo && m.tipo.includes('Cash Out'))) cashouts++;
         }
       });
 
@@ -4698,14 +4745,14 @@
           'Estado'
         ];
 
-        const historialFilas = movimientos.map(m => {
+        const historialFilas = movimientosValidos.map(m => {
           const esRetiro = m.categoria === 'retiro' || (m.tipo && m.tipo.includes('Retiro'));
-          let estadoTexto = 'EN JUEGO';
-          if (m.categoria === 'ganada') estadoTexto = 'GANADA ✅';
-          else if (m.categoria === 'perdida') estadoTexto = 'PERDIDA ❌';
-          else if (m.categoria === 'cashout') estadoTexto = 'CASHOUT 🟡';
+          let estadoTexto = 'GANADA ✅';
+          if (m.categoria === 'perdida' || m.neto < 0) estadoTexto = 'PERDIDA ❌';
+          else if (m.categoria === 'cashout' || (m.tipo && m.tipo.includes('Cash Out'))) estadoTexto = 'CASHOUT 🟡';
           else if (esRetiro) estadoTexto = 'RETIRO BANCO 🏦';
           else if (m.categoria === 'anulada') estadoTexto = 'ANULADA';
+          else if (m.neto > 0 || m.categoria === 'ganada') estadoTexto = 'GANADA ✅';
 
           return [
             m.code || ('MOV_' + m.id),
@@ -4745,10 +4792,11 @@
 
     function exportarExcelHTML(fechaHoy, horaHoy, fechaArchivo, totalInvertido, totalCobrado, beneficioNeto, roi, winRate, totalApuestas, ganadas, perdidas, cashouts, retirosBanco) {
       let rowsHtml = '';
-      movimientos.forEach(m => {
+      const movimientosValidos = movimientos.filter(m => !(m.invertido === 0 && m.retorno === 0 && m.neto === 0));
+      movimientosValidos.forEach(m => {
         const esRetiro = m.categoria === 'retiro' || (m.tipo && m.tipo.includes('Retiro'));
         const netoColor = esRetiro ? '#8b5cf6' : (m.neto > 0 ? '#10b981' : (m.neto < 0 ? '#ef4444' : '#64748b'));
-        const estadoTag = m.categoria === 'ganada' ? 'GANADA' : (m.categoria === 'perdida' ? 'PERDIDA' : (m.categoria === 'cashout' ? 'CASHOUT' : (esRetiro ? 'RETIRO' : 'ANULADA')));
+        const estadoTag = m.categoria === 'ganada' || m.neto > 0 ? 'GANADA ✅' : (m.categoria === 'perdida' || m.neto < 0 ? 'PERDIDA ❌' : (m.categoria === 'cashout' ? 'CASHOUT 🟡' : (esRetiro ? 'RETIRO 🏦' : 'ANULADA')));
         rowsHtml += `
           <tr>
             <td style="border:1px solid #cbd5e1; padding:8px;">${m.code || ('MOV_' + m.id)}</td>

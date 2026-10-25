@@ -659,8 +659,8 @@
           <span>Bankroll Real</span>
           <span style="cursor: pointer; color: #38bdf8;" onclick="ajustarBankrollModal()" title="Editar Bankroll">✏️</span>
         </div>
-        <div class="kpi-val" id="liveBankroll" style="color: #38bdf8;">$ 1.000.000 COP</div>
-        <div class="kpi-sub" id="liveBankrollSub">Capital en caja</div>
+        <div class="kpi-val" id="liveBankroll" style="color: #38bdf8;">$ 792.033 COP</div>
+        <div class="kpi-sub" id="liveBankrollSub">Stake 1 (1%) = $ 7.920 COP</div>
       </div>
 
       <div class="kpi-box kpi-debt" id="boxDeuda">
@@ -668,13 +668,13 @@
           <span>Déficit / Costo a Recuperar</span>
           <span style="cursor: pointer; color: #ef4444;" onclick="ajustarDeudaModal()" title="Ajustar Déficit">✏️</span>
         </div>
-        <div class="kpi-val" id="liveDeuda" style="color: #ef4444;">$ 0 COP</div>
-        <div class="kpi-sub" id="liveDeudaSub">Sin pérdidas acumuladas</div>
+        <div class="kpi-val" id="liveDeuda" style="color: #ef4444;">$ 207.967 COP</div>
+        <div class="kpi-sub" id="liveDeudaSub">Déficit pendiente por recuperar</div>
       </div>
 
       <div class="kpi-box kpi-profit">
         <div class="kpi-label">Beneficio Neto Total</div>
-        <div class="kpi-val" id="liveNeto">$ 0 COP</div>
+        <div class="kpi-val" id="liveNeto" style="color: var(--red);">- $ 207.967 COP</div>
         <div class="kpi-sub" id="liveNetoSub">Rendimiento global</div>
       </div>
 
@@ -1653,10 +1653,33 @@
       if (e.key === 'Escape') cerrarProModal();
     });
 
-    let bankrollTotal = parseFloat(localStorage.getItem('bankroll_total')) || 100000;
-    let deudaRecuperacion = parseFloat(localStorage.getItem('deuda_recuperacion')) || 0;
+    let bankrollTotal = parseFloat(localStorage.getItem('bankroll_total'));
+    let deudaRecuperacion = parseFloat(localStorage.getItem('deuda_recuperacion'));
     let movimientos = JSON.parse(localStorage.getItem('movimientos_apuestas')) || [];
     let apuestasActivas = JSON.parse(localStorage.getItem('apuestas_activas')) || [];
+
+    // Si los valores locales son los antiguos por defecto o están vacíos, cargar estado real
+    if (isNaN(bankrollTotal) || (bankrollTotal === 1000000 && (!deudaRecuperacion || deudaRecuperacion === 0))) {
+      bankrollTotal = 792033;
+      deudaRecuperacion = 207967;
+      if (!movimientos || movimientos.length === 0) {
+        movimientos = [{
+          id: 1792770000000,
+          code: "IMG_9437",
+          fecha: "23/10/2026 12:00",
+          tipo: "Apuesta Perdida Betano",
+          categoria: "perdida",
+          concepto: "Simple #IMG_9437 (Flamengo vs Estudiantes)",
+          cuota: 2.27,
+          invertido: 207967,
+          retorno: 0,
+          neto: -207967
+        }];
+      }
+      localStorage.setItem('bankroll_total', bankrollTotal);
+      localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
+      localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
+    }
     let currentCalculatedStake = { montoApostar: 2000, retornoBruto: 2900, beneficioLimpio: 900, cuota: 1.45 };
     let casoActual = 'rescate'; // 'rescate' | 'normal' | 'freebet'
     let pasosSeleccionados = 1;
@@ -4201,6 +4224,8 @@
 
     // --- MOTOR DE SINCRONIZACIÓN EN TIEMPO REAL CON BASE DE DATOS GITHUB ---
     const GITHUB_RAW_DATA_URL = 'https://raw.githubusercontent.com/contatotal03-ship-it/control-apuestas/main/datos_apuestas.json';
+    const GITHUB_API_DATA_URL = 'https://api.github.com/repos/contatotal03-ship-it/control-apuestas/contents/datos_apuestas.json';
+    const LOCAL_SYNC_URL = 'http://127.0.0.1:8765';
     let isSavingToLocalServer = false;
 
     async function guardarEstadoNubeRealtime() {
@@ -4222,7 +4247,7 @@
       };
 
       try {
-        await fetch('http://127.0.0.1:8080/api/save', {
+        await fetch(`${LOCAL_SYNC_URL}/api/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -4243,16 +4268,29 @@
 
     async function cargarEstadoDesdeGitHub(forzar = false) {
       const elInd = document.getElementById('cloudSyncIndicator');
-      const urls = [
-        'datos_apuestas.json?_t=' + Date.now(),
-        GITHUB_RAW_DATA_URL + '?_t=' + Date.now()
+      const fuentes = [
+        { tipo: 'json', url: `${LOCAL_SYNC_URL}/api/data?_t=${Date.now()}` },
+        { tipo: 'json', url: `datos_apuestas.json?_t=${Date.now()}` },
+        { tipo: 'github_api', url: `${GITHUB_API_DATA_URL}?_t=${Date.now()}` },
+        { tipo: 'json', url: `${GITHUB_RAW_DATA_URL}?_t=${Date.now()}` }
       ];
 
-      for (const url of urls) {
+      for (const src of fuentes) {
         try {
-          const res = await fetch(url, { cache: 'no-store' });
+          const res = await fetch(src.url, { cache: 'no-store' });
           if (!res.ok) continue;
-          const ghData = await res.json();
+
+          let ghData = null;
+          if (src.tipo === 'github_api') {
+            const apiJson = await res.json();
+            if (apiJson && apiJson.content) {
+              const rawStr = atob(apiJson.content.replace(/\s/g, ''));
+              ghData = JSON.parse(decodeURIComponent(escape(rawStr)));
+            }
+          } else {
+            ghData = await res.json();
+          }
+
           if (!ghData || typeof ghData.bankroll !== 'number') continue;
 
           let cambio = false;
@@ -4282,9 +4320,16 @@
           }
 
           if (cambio) {
+            const elPerdida = document.getElementById('dynPerdida');
+            if (elPerdida) elPerdida.value = Math.round(deudaRecuperacion || 0);
+            const elBank = document.getElementById('inputAjustarBank');
+            if (elBank) elBank.value = bankrollTotal;
+
             renderDashboard();
             renderApuestasActivas();
             analizarLinkBetano();
+            calcularEnVivo();
+            evaluarCashoutEnVivo();
             console.log('⚡ Base de datos de GitHub sincronizada con éxito en tiempo real:', ghData);
           }
 
@@ -4294,7 +4339,7 @@
           }
           break;
         } catch (err) {
-          // continuar con siguiente URL
+          // continuar con siguiente fuente
         }
       }
     }

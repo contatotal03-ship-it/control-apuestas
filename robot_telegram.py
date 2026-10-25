@@ -59,28 +59,28 @@ CLOUD_SYNC_ENDPOINT = "https://api.restful-api.dev/objects/ff808181a09d98f701a16
 
 def sincronizar_nube_realtime(bankroll, deuda):
     try:
-        payload = {
-            "name": "Bankroll_Pro_Master_Live_Database",
-            "data": {
-                "bankroll": float(bankroll),
-                "deuda": float(deuda),
-                "lastUpdated": int(datetime.now().timestamp() * 1000)
-            }
-        }
-        data = json.dumps(payload).encode("utf-8")
-        req = urllib.request.Request(CLOUD_SYNC_ENDPOINT, data=data, method="PUT", headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=4) as res:
-            pass
-        # Actualizar datos_apuestas.json local para GitHub
+        json_path = os.path.join(os.path.dirname(__file__), "datos_apuestas.json")
         gh_data = {
             "bankroll": float(bankroll),
             "deuda": float(deuda),
+            "movimientos": [],
+            "apuestasActivas": [],
             "ultimaActualizacion": datetime.now().isoformat()
         }
-        with open(os.path.join(os.path.dirname(__file__), "datos_apuestas.json"), "w", encoding="utf-8") as f:
-            json.dump(gh_data, f, indent=2)
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+                    if isinstance(existing, dict):
+                        gh_data["movimientos"] = existing.get("movimientos", [])
+                        gh_data["apuestasActivas"] = existing.get("apuestasActivas", [])
+            except Exception:
+                pass
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(gh_data, f, indent=2, ensure_ascii=False)
+        threading.Thread(target=push_github_background, daemon=True).start()
     except Exception as e:
-        print(f"Error sincronizando nube desde Telegram: {e}")
+        print(f"Error sincronizando datos desde Telegram: {e}")
 
 def set_user_bankroll(user_id, bankroll):
     conn = sqlite3.connect(DB_PATH)
@@ -937,6 +937,25 @@ class SyncHTTPHandler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
 
+    def do_GET(self):
+        if self.path.startswith('/api/data') or self.path.startswith('/datos_apuestas.json'):
+            try:
+                json_path = os.path.join(os.path.dirname(__file__), 'datos_apuestas.json')
+                if os.path.exists(json_path):
+                    with open(json_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    self.send_response(200)
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Content-Type', 'application/json; charset=utf-8')
+                    self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
+                    self.end_headers()
+                    self.wfile.write(content.encode('utf-8'))
+                    return
+            except Exception as e:
+                pass
+        self.send_response(404)
+        self.end_headers()
+
     def do_POST(self):
         if self.path == '/api/save':
             content_length = int(self.headers.get('Content-Length', 0))
@@ -946,7 +965,7 @@ class SyncHTTPHandler(BaseHTTPRequestHandler):
                 json_path = os.path.join(os.path.dirname(__file__), 'datos_apuestas.json')
                 with open(json_path, 'w', encoding='utf-8') as f:
                     json.dump(data, f, indent=2, ensure_ascii=False)
-                threading.Thread(target=push_github_background).start()
+                threading.Thread(target=push_github_background, daemon=True).start()
                 self.send_response(200)
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Content-Type', 'application/json')
@@ -957,7 +976,7 @@ class SyncHTTPHandler(BaseHTTPRequestHandler):
                 self.end_headers()
 
     def log_message(self, format, *args):
-        pass  # Silenciar logs para no saturar
+        pass  # Silenciar logs para no saturar la consola
 
 def push_github_background():
     try:
@@ -968,10 +987,11 @@ def push_github_background():
 
 def start_http_server():
     try:
-        server = HTTPServer(('127.0.0.1', 8080), SyncHTTPHandler)
+        server = HTTPServer(('127.0.0.1', 8765), SyncHTTPHandler)
+        print("🌐 Servidor de Sincronización Local activo en http://127.0.0.1:8765")
         server.serve_forever()
     except Exception as e:
-        pass
+        print(f"Aviso servidor local HTTP: {e}")
 
 # Bucle principal de polling
 def run_bot():

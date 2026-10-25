@@ -983,7 +983,7 @@
           <div class="input-row">
             <div class="form-group" id="grpMontoLibre" style="display: block;">
               <label><span>Monto de la Apuesta ($ COP):</span></label>
-              <input type="number" id="dynMontoManual" value="10000" oninput="calcularEnVivo()" placeholder="Ej: 10000">
+              <input type="number" id="dynMontoManual" oninput="calcularEnVivo()" placeholder="Monto Stake (1%)">
             </div>
             <div class="form-group">
               <label><span>Ganancia Extra Deseada:</span></label>
@@ -4343,6 +4343,12 @@
             if (elPerdida) elPerdida.value = Math.round(deudaRecuperacion || 0);
             const elBank = document.getElementById('inputAjustarBank');
             if (elBank) elBank.value = bankrollTotal;
+            if (casoActual === 'normal') {
+              const elMonto = document.getElementById('dynMontoManual');
+              if (elMonto && (!elMonto.value || elMonto.value === '10000')) {
+                elMonto.value = Math.round(bankrollTotal * 0.01);
+              }
+            }
 
             renderDashboard();
             renderApuestasActivas();
@@ -4449,7 +4455,7 @@
     });
 
     // Inicializar interfaz
-    seleccionarCaso('normal');
+    setStakeDirecto(0.01);
     document.getElementById('dynPerdida').value = 0;
     document.getElementById('inputAjustarBank').value = bankrollTotal;
     renderDashboard();

@@ -1494,7 +1494,7 @@
         <button type="button" class="pro-btn-secondary" onclick="cerrarProModal()">
           ${config.botonCancelar || 'Cancelar'}
         </button>
-        <button type="button" class="pro-btn-primary" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);" onclick="ejecutarAccionModalConfirm()">
+        <button type="button" class="pro-btn-primary" id="btnConfirmarAccionModal" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);" onclick="ejecutarAccionModalConfirm()">
           <span>${config.botonConfirmar || 'Sí, Confirmar'}</span>
         </button>
       `;
@@ -1658,27 +1658,30 @@
     let movimientos = JSON.parse(localStorage.getItem('movimientos_apuestas')) || [];
     let apuestasActivas = JSON.parse(localStorage.getItem('apuestas_activas')) || [];
 
-    // Si los valores locales son los antiguos por defecto o están vacíos, cargar estado real
-    if (isNaN(bankrollTotal) || (bankrollTotal === 1000000 && (!deudaRecuperacion || deudaRecuperacion === 0))) {
+    // Migración inicial única: solo la primera vez que se visita se cargan los valores reales iniciales
+    if (!localStorage.getItem('initial_v2_migrated')) {
+      localStorage.setItem('initial_v2_migrated', 'true');
       bankrollTotal = 792033;
       deudaRecuperacion = 207967;
-      if (!movimientos || movimientos.length === 0) {
-        movimientos = [{
-          id: 1792770000000,
-          code: "IMG_9437",
-          fecha: "23/10/2026 12:00",
-          tipo: "Apuesta Perdida Betano",
-          categoria: "perdida",
-          concepto: "Simple #IMG_9437 (Flamengo vs Estudiantes)",
-          cuota: 2.27,
-          invertido: 207967,
-          retorno: 0,
-          neto: -207967
-        }];
-      }
+      movimientos = [{
+        id: 1792770000000,
+        code: "IMG_9437",
+        fecha: "23/10/2026 12:00",
+        tipo: "Apuesta Perdida Betano",
+        categoria: "perdida",
+        concepto: "Simple #IMG_9437 (Flamengo vs Estudiantes)",
+        cuota: 2.27,
+        invertido: 207967,
+        retorno: 0,
+        neto: -207967
+      }];
       localStorage.setItem('bankroll_total', bankrollTotal);
       localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
       localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
+      localStorage.setItem('last_local_update', Date.now().toString());
+    } else {
+      if (isNaN(bankrollTotal)) bankrollTotal = 792033;
+      if (isNaN(deudaRecuperacion)) deudaRecuperacion = 0;
     }
     let currentCalculatedStake = { montoApostar: 2000, retornoBruto: 2900, beneficioLimpio: 900, cuota: 1.45 };
     let casoActual = 'rescate'; // 'rescate' | 'normal' | 'freebet'
@@ -3498,6 +3501,7 @@
       localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
       localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
       localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
+      localStorage.setItem('last_local_update', Date.now().toString());
 
       sincronizarConTelegramCloud('guardar');
       guardarEstadoNubeRealtime();
@@ -4198,11 +4202,19 @@
           movimientos = [];
           apuestasActivas = [];
           deudaRecuperacion = 0;
-          document.getElementById('dynPerdida').value = 0;
+          localStorage.setItem('user_did_reset', 'true');
+          localStorage.setItem('last_local_update', Date.now().toString());
+          localStorage.setItem('movimientos_apuestas', '[]');
+          localStorage.setItem('apuestas_activas', '[]');
+          localStorage.setItem('deuda_recuperacion', '0');
+
+          const elP = document.getElementById('dynPerdida');
+          if (elP) elP.value = 0;
+
           guardarEstado();
           renderDashboard();
           renderApuestasActivas();
-          limpiarPantallaBoleto();
+          try { limpiarPantallaBoleto(); } catch (e) {}
           mostrarToast('Historial, apuestas en juego y déficit reiniciados por completo.', 'success');
         }
       });
@@ -4292,6 +4304,13 @@
           }
 
           if (!ghData || typeof ghData.bankroll !== 'number') continue;
+
+          // COMPARACIÓN TEMPORAL: Respetar cambios locales recientes del usuario (como reiniciar historial o registrar apuestas)
+          const localUpdate = parseInt(localStorage.getItem('last_local_update') || '0', 10);
+          const remoteUpdate = ghData.ultimaActualizacion ? new Date(ghData.ultimaActualizacion).getTime() : 0;
+          if (!forzar && localUpdate > remoteUpdate) {
+            continue;
+          }
 
           let cambio = false;
 

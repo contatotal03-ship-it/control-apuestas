@@ -4506,37 +4506,24 @@
 
     function conciliarBetanoModal() {
       const saldoSistema = bankrollTotal;
-      mostrarCelebracionModal({
-        tipo: 'normal',
+      mostrarModalInputPro({
         badge: 'AUDITORÍA & CONCILIACIÓN',
         icon: '⚖️',
+        tipo: 'bankroll',
+        accentColor: '#38bdf8',
         titulo: 'Conciliar Caja con Betano',
-        subtitulo: 'Compara tu saldo registrado en la app contra lo que muestra tu cuenta de Betano',
-        notes: [
-          `📊 <strong>Saldo Actual en el Sistema:</strong> ${formatCOP(saldoSistema)}`,
-          `📱 Abre tu cuenta de Betano y mira tu saldo en pantalla.`,
-          `Ingresa el saldo exacto de Betano a continuación para auditar:`
-        ],
-        botonTexto: '⚖️ Auditar Saldo',
-        onConfirm: () => {
-          mostrarModalInputPro({
-            badge: 'COMPARAR SALDO BETANO',
-            icon: '⚖️',
-            tipo: 'bankroll',
-            accentColor: '#38bdf8',
-            titulo: 'Ingresar Saldo Real de Betano',
-            subtitulo: `Saldo en Sistema: ${formatCOP(saldoSistema)}. Ingresa lo que dice Betano:`,
-            instruccion: 'Saldo visible en tu cuenta de Betano ($ COP):',
-            placeholder: 'Ej: 217966',
-            valorDefault: Math.round(saldoSistema),
-            botonConfirmar: '⚖️ Auditar y Cuadrar Saldo',
-            atajos: [Math.round(saldoSistema), 50000, 100000, 200000, 500000].filter((v, i, a) => v >= 0 && a.indexOf(v) === i),
-            onConfirm: (valStr) => {
-              const valBetano = parseFloat(valStr.replace(/\./g, '').replace(/,/g, ''));
-              if (isNaN(valBetano) || valBetano < 0) {
-                return mostrarToast('Por favor ingresa un monto válido.', 'warning');
-              }
-              const diferencia = valBetano - saldoSistema;
+        subtitulo: `Saldo registrado en Sistema: <strong>${formatCOP(saldoSistema)}</strong>`,
+        instruccion: 'Ingresa aquí el saldo real que muestra tu cuenta de Betano ($ COP):',
+        placeholder: 'Ej: 217966',
+        valorDefault: Math.round(saldoSistema),
+        botonConfirmar: '⚖️ Auditar y Comparar con Betano',
+        atajos: [Math.round(saldoSistema), 50000, 100000, 200000, 500000].filter((v, i, a) => v >= 0 && a.indexOf(v) === i),
+        onConfirm: (valStr) => {
+          const valBetano = parseFloat(valStr.replace(/\./g, '').replace(/,/g, ''));
+          if (isNaN(valBetano) || valBetano < 0) {
+            return mostrarToast('Por favor ingresa un monto válido.', 'warning');
+          }
+          const diferencia = valBetano - saldoSistema;
 
               if (diferencia === 0) {
                 mostrarCelebracionModal({
@@ -4592,9 +4579,6 @@
                     mostrarToast(`¡Caja cuadrada y conciliada a ${formatCOP(bankrollTotal)}!`, 'success');
                   }
                 });
-              }
-            }
-          });
         }
       });
     }

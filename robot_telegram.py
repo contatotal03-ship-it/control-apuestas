@@ -1205,6 +1205,83 @@ def handle_callback_query(cq):
             "parse_mode": "Markdown"
         })
 
+    elif data.startswith("act_gana_"):
+        parts = data.split("_")
+        stake = float(parts[2])
+        payout = float(parts[3])
+        cuota = float(parts[4])
+        neto = payout - stake if payout > stake else stake * (cuota - 1)
+
+        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=neto, delta_debt=0)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
+        cursor.execute(
+            "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, fecha_hoy, "apuesta_ganada", "Boleto Betano (Escaneado)", stake, payout, neto)
+        )
+        conn.commit()
+        conn.close()
+
+        sincronizar_archivo_json(new_bank, new_debt, "apuesta_ganada", "Boleto Betano (Escaneado)", stake, cuota, payout, neto)
+
+        res_txt = (
+            "✅ *¡REGISTRADO EN TU CAJA CON ÉXITO!*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎉 *Beneficio Ganado:* `+${neto:,.0f} COP`\n"
+            f"💰 *Nuevo Bankroll:* `${new_bank:,.0f} COP`\n"
+            f"🛡️ *Déficit Pendiente:* `${new_debt:,.0f} COP`\n\n"
+            "_Sincronizado al instante con la app web y GitHub._"
+        ).replace(",", ".")
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": msg.get("message_id"),
+            "text": res_txt,
+            "parse_mode": "Markdown"
+        })
+
+    elif data.startswith("act_pierde_"):
+        parts = data.split("_")
+        stake = float(parts[2])
+        cuota = float(parts[3])
+        neto = -stake
+
+        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=-stake, delta_debt=stake)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
+        cursor.execute(
+            "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, fecha_hoy, "apuesta_perdida", "Boleto Betano (Escaneado)", stake, 0, neto)
+        )
+        conn.commit()
+        conn.close()
+
+        sincronizar_archivo_json(new_bank, new_debt, "apuesta_perdida", "Boleto Betano (Escaneado)", stake, cuota, 0, neto)
+
+        res_txt = (
+            "📉 *PÉRDIDA REGISTRADA EN TU CAJA*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🔴 *Monto Restado:* `-${stake:,.0f} COP`\n"
+            f"💰 *Nuevo Bankroll:* `${new_bank:,.0f} COP`\n"
+            f"🚨 *Total por Recuperar:* `${new_debt:,.0f} COP`\n\n"
+            "_Sincronizado al instante con la app web y GitHub._"
+        ).replace(",", ".")
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": msg.get("message_id"),
+            "text": res_txt,
+            "parse_mode": "Markdown"
+        })
+
+    elif data == "act_cancel":
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": msg.get("message_id"),
+            "text": "ℹ️ Boleto descartado. No se realizaron cambios en tu caja.",
+            "parse_mode": "Markdown"
+        })
+
 # Servidor HTTP local para sincronización bidireccional inmediata con GitHub
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -1291,166 +1368,6 @@ def start_http_server():
         server.serve_forever()
     except Exception as e:
         print(f"Aviso servidor local HTTP: {e}")
-
-def sincronizar_archivo_json(bank, deuda, tipo, concepto, stake, cuota, retorno, neto):
-    try:
-        json_path = os.path.join(os.path.dirname(__file__), "datos_apuestas.json")
-        data = {"bankroll": bank, "deuda": deuda, "movimientos": []}
-        if os.path.exists(json_path):
-            with open(json_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        data["bankroll"] = bank
-        data["deuda"] = deuda
-        nuevo_mov = {
-            "id": int(datetime.now().timestamp() * 1000),
-            "code": "BOT_" + datetime.now().strftime("%H%M%S"),
-            "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
-            "tipo": "Apuesta Ganada Betano" if "ganada" in tipo else "Apuesta Perdida Betano",
-            "categoria": "ganada" if "ganada" in tipo else "perdida",
-            "concepto": concepto,
-            "cuota": cuota,
-            "invertido": stake,
-            "retorno": retorno,
-            "neto": neto
-        }
-        movs = data.get("movimientos", [])
-        movs.insert(0, nuevo_mov)
-        data["movimientos"] = movs
-        data["ultimaActualizacion"] = datetime.now().isoformat()
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        threading.Thread(target=push_github_background, daemon=True).start()
-    except Exception as e:
-        print(f"Error sincronizando JSON: {e}")
-
-def handle_callback_query(cq):
-    query_id = cq.get("id")
-    data = cq.get("data", "")
-    msg = cq.get("message", {})
-    chat_id = msg.get("chat", {}).get("id")
-    message_id = msg.get("message_id")
-    user_id = cq.get("from", {}).get("id")
-
-    if not query_id:
-        return
-
-    # Responder al callback para quitar el loader de Telegram
-    send_telegram_request("answerCallbackQuery", {"callback_query_id": query_id, "text": "Procesando..."})
-
-    if data.startswith("act_gana_"):
-        parts = data.split("_")
-        stake = float(parts[2])
-        payout = float(parts[3])
-        cuota = float(parts[4])
-        neto = payout - stake if payout > stake else stake * (cuota - 1)
-
-        # Actualizar en SQLite
-        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=neto, delta_debt=0)
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
-        cursor.execute(
-            "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (user_id, fecha_hoy, "apuesta_ganada", "Boleto Betano (Escaneado)", stake, payout, neto)
-        )
-        conn.commit()
-        conn.close()
-
-        # Actualizar datos_apuestas.json y GitHub
-        sincronizar_archivo_json(new_bank, new_debt, "apuesta_ganada", "Boleto Betano (Escaneado)", stake, cuota, payout, neto)
-
-        res_txt = (
-            "✅ *¡REGISTRADO EN TU CAJA CON ÉXITO!*\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🎉 *Beneficio Ganado:* `+${neto:,.0f} COP`\n"
-            f"💰 *Nuevo Bankroll:* `${new_bank:,.0f} COP`\n"
-            f"🛡️ *Déficit Pendiente:* `${new_debt:,.0f} COP`\n\n"
-            "_Sincronizado al instante con la app web y GitHub._"
-        ).replace(",", ".")
-        send_telegram_request("editMessageText", {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": res_txt,
-            "parse_mode": "Markdown"
-        })
-
-    elif data.startswith("act_pierde_"):
-        parts = data.split("_")
-        stake = float(parts[2])
-        cuota = float(parts[3])
-        neto = -stake
-
-        # Actualizar en SQLite
-        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=-stake, delta_debt=stake)
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
-        cursor.execute(
-            "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (user_id, fecha_hoy, "apuesta_perdida", "Boleto Betano (Escaneado)", stake, 0, neto)
-        )
-        conn.commit()
-        conn.close()
-
-        # Actualizar datos_apuestas.json y GitHub
-        sincronizar_archivo_json(new_bank, new_debt, "apuesta_perdida", "Boleto Betano (Escaneado)", stake, cuota, 0, neto)
-
-        res_txt = (
-            "📉 *PÉRDIDA REGISTRADA EN TU CAJA*\n"
-            "━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🔴 *Monto Restado:* `-${stake:,.0f} COP`\n"
-            f"💰 *Nuevo Bankroll:* `${new_bank:,.0f} COP`\n"
-            f"🚨 *Total por Recuperar:* `${new_debt:,.0f} COP`\n\n"
-            "_Sincronizado al instante con la app web y GitHub._"
-        ).replace(",", ".")
-        send_telegram_request("editMessageText", {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": res_txt,
-            "parse_mode": "Markdown"
-        })
-
-    elif data == "act_cancel":
-        send_telegram_request("editMessageText", {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": "ℹ️ Boleto descartado. No se realizaron cambios en tu caja.",
-            "parse_mode": "Markdown"
-        })
-
-    elif data.startswith("res_gana_"):
-        parts = data.split("_")
-        code = parts[2]
-        cuota = float(parts[3]) if len(parts) > 3 else 1.80
-        stake = 20000.0
-        retorno = stake * cuota
-        neto = retorno - stake
-        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=neto, delta_debt=0)
-        sincronizar_archivo_json(new_bank, new_debt, "apuesta_ganada", f"Boleto #{code}", stake, cuota, retorno, neto)
-        send_telegram_request("editMessageText", {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": f"✅ ¡Boleto #{code} registrado como GANADO!\n\n• Ganancia Neta: +${neto:,.0f} COP\n• Nuevo Bankroll: ${new_bank:,.0f} COP".replace(",", "."),
-            "parse_mode": "Markdown"
-        })
-
-    elif data.startswith("res_pierde_"):
-        parts = data.split("_")
-        code = parts[2]
-        stake = 20000.0
-        neto = -stake
-        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=-stake, delta_debt=stake)
-        sincronizar_archivo_json(new_bank, new_debt, "apuesta_perdida", f"Boleto #{code}", stake, 1.80, 0, neto)
-        send_telegram_request("editMessageText", {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": f"📉 Boleto #{code} registrado como PERDIDO.\n\n• Pérdida: -${stake:,.0f} COP\n• Nuevo Bankroll: ${new_bank:,.0f} COP".replace(",", "."),
-            "parse_mode": "Markdown"
-        })
-
-    elif data in ["help_gana", "help_pierde", "help_cashout", "help_anulada"]:
-        send_telegram_request("answerCallbackQuery", {"callback_query_id": query_id, "text": "Procesando resultado..."})
-
 
 # Bucle principal de polling
 def run_bot():

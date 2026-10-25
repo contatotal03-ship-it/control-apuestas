@@ -1,7 +1,19 @@
 {
-  "bankroll": 200000.0,
+  "bankroll": 250000.0,
   "deuda": 0.0,
   "movimientos": [
+    {
+      "id": 1792897265142,
+      "code": "AUD_5142",
+      "fecha": "24/10/2026 10:01 pm",
+      "tipo": "Conciliación Betano",
+      "categoria": "ganada",
+      "concepto": "⚖️ Conciliación con Betano (+$50.000 COP)",
+      "cuota": 1.0,
+      "invertido": 50000.0,
+      "retorno": 50000.0,
+      "neto": 50000.0
+    },
     {
       "id": 1792895789641,
       "code": "RET_9641",
@@ -124,5 +136,5 @@
     }
   ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-24T22:00:37.366567"
+  "ultimaActualizacion": "2026-10-24T22:01:05.142934"
 }

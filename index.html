@@ -312,6 +312,7 @@
     .tag-perdida { background: rgba(239, 68, 68, 0.2); color: #f87171; }
     .tag-freebet { background: rgba(139, 92, 246, 0.25); color: #c084fc; }
     .tag-anulada { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+    .tag-retiro { background: rgba(168, 85, 247, 0.25); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.4); }
 
     .code-pill {
       display: inline-block; background: rgba(0, 0, 0, 0.5); padding: 0.15rem 0.45rem;
@@ -658,7 +659,8 @@
         <div class="kpi-label">
           <span>Bankroll Real</span>
           <span style="display: flex; gap: 0.35rem; align-items: center;">
-            <button type="button" onclick="recargarCajaModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; border-radius: 0.35rem; padding: 0.1rem 0.4rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;">➕ Recargar</button>
+            <button type="button" onclick="recargarCajaModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; border-radius: 0.35rem; padding: 0.15rem 0.45rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;" title="Ingresar recarga / depósito">➕ Recargar</button>
+            <button type="button" onclick="retirarCajaModal()" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #c084fc; border-radius: 0.35rem; padding: 0.15rem 0.45rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;" title="Sacar dinero de Betano a tu banco">🏦 Retirar</button>
             <span style="cursor: pointer; color: #38bdf8;" onclick="ajustarBankrollModal()" title="Editar Bankroll">✏️</span>
           </span>
         </div>
@@ -3592,18 +3594,21 @@
         if (m.categoria === 'perdida') tagClass = 'tag-perdida';
         else if (m.categoria === 'freebet') tagClass = 'tag-freebet';
         else if (m.categoria === 'anulada') tagClass = 'tag-anulada';
+        else if (m.categoria === 'retiro') tagClass = 'tag-retiro';
 
-        const netoColor = m.neto > 0 ? '#34d399' : (m.neto < 0 ? '#f87171' : '#94a3b8');
+        const esRetiro = m.categoria === 'retiro' || (m.tipo && m.tipo.includes('Retiro'));
+        const netoColor = esRetiro ? '#c084fc' : (m.neto > 0 ? '#34d399' : (m.neto < 0 ? '#f87171' : '#94a3b8'));
+        const netoText = esRetiro ? `🏦 -${formatCOP(m.invertido)} (A Banco)` : `${m.neto >= 0 ? '+' : ''}${formatCOP(m.neto)}`;
 
         tr.innerHTML = `
           <td>${m.fecha}</td>
           <td><span class="tag ${tagClass}">${m.tipo}</span></td>
           <td><strong>${m.concepto}</strong></td>
-          <td>${m.cuota ? '@ ' + m.cuota.toFixed(2) : '-'}</td>
+          <td>${m.cuota && m.cuota > 1.0 ? '@ ' + m.cuota.toFixed(2) : '-'}</td>
           <td>${formatCOP(m.invertido)}</td>
-          <td>${formatCOP(m.retorno)}</td>
-          <td style="color: ${netoColor}; font-weight: 700;">${m.neto >= 0 ? '+' : ''}${formatCOP(m.neto)}</td>
-          <td><button onclick="eliminarMovimiento(${m.id})" style="background: transparent; border: none; color: #64748b; cursor: pointer;">🗑️</button></td>
+          <td>${esRetiro ? 'En Banco' : formatCOP(m.retorno)}</td>
+          <td style="color: ${netoColor}; font-weight: 700;">${netoText}</td>
+          <td><button onclick="eliminarMovimiento(${m.id})" style="background: transparent; border: none; color: #64748b; cursor: pointer;" title="Eliminar">🗑️</button></td>
         `;
         tbody.appendChild(tr);
       });
@@ -4293,6 +4298,71 @@
             renderDashboard();
             mostrarToast(`¡Recarga de ${formatCOP(val)} agregada! Nuevo saldo: ${formatCOP(bankrollTotal)}`, 'success');
           }
+        }
+      });
+    }
+
+    function retirarCajaModal() {
+      if (bankrollTotal <= 0) {
+        return mostrarToast('No tienes saldo disponible en Betano para retirar.', 'warning');
+      }
+      mostrarModalInputPro({
+        badge: 'RETIRO DE GANANCIAS',
+        icon: '🏦',
+        tipo: 'bankroll',
+        accentColor: '#a855f7',
+        titulo: 'Retirar Dinero de Betano a tu Banco',
+        subtitulo: 'Transfiere dinero de Betano hacia tu cuenta real (Nequi, Daviplata, Bancolombia). Esto NO es una pérdida, es dinero ganado en tu bolsillo.',
+        instruccion: 'Ingresa el monto a retirar ($ COP):',
+        placeholder: 'Ej: 100000',
+        valorDefault: Math.min(bankrollTotal, 100000),
+        botonConfirmar: '🏦 Confirmar Retiro a Banco',
+        atajos: [
+          Math.min(bankrollTotal, 50000),
+          Math.min(bankrollTotal, 100000),
+          Math.min(bankrollTotal, 200000),
+          Math.round(bankrollTotal)
+        ].filter((v, i, a) => v > 0 && a.indexOf(v) === i),
+        onConfirm: (valStr) => {
+          const val = parseFloat(valStr.replace(/\./g, '').replace(/,/g, ''));
+          if (!val || isNaN(val) || val <= 0) {
+            return mostrarToast('Ingresa un monto válido mayor a 0.', 'warning');
+          }
+          if (val > bankrollTotal) {
+            return mostrarToast(`No puedes retirar más de tu saldo disponible (${formatCOP(bankrollTotal)}).`, 'warning');
+          }
+
+          bankrollTotal = Math.max(0, bankrollTotal - val);
+          const fechaStr = new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+          movimientos.unshift({
+            id: Date.now(),
+            code: 'RET_' + Date.now().toString().slice(-4),
+            fecha: fechaStr,
+            tipo: 'Retiro de Ganancias',
+            categoria: 'retiro',
+            concepto: '🏦 Retiro de Betano a Banco / Nequi',
+            cuota: 1.0,
+            invertido: val,
+            retorno: val,
+            neto: 0 // ¡NO es pérdida!
+          });
+
+          guardarEstado();
+          renderDashboard();
+          mostrarCelebracionModal({
+            tipo: 'exito',
+            badge: '¡GANANCIAS ASEGURADAS!',
+            icon: '🎉',
+            titulo: '¡Retiro Registrado con Éxito!',
+            subtitulo: `Has transferido ${formatCOP(val)} de Betano a tu cuenta real.`,
+            notes: [
+              `🏦 Monto retirado a tu bolsillo: ${formatCOP(val)}`,
+              `💰 Saldo restante para jugar en Betano: ${formatCOP(bankrollTotal)}`,
+              `✨ Este movimiento NO cuenta como pérdida en tus estadísticas.`
+            ],
+            botonTexto: 'Excelente',
+            confetti: true
+          });
         }
       });
     }

@@ -710,6 +710,43 @@ def handle_message(msg):
         except ValueError:
             send_message(chat_id, "⚠️ Monto inválido. Ejemplo: `/recarga 50000`")
 
+    elif cmd in ["/retiro", "/retirar"]:
+        if len(parts) < 2:
+            send_message(chat_id, "⚠️ Indica el monto a retirar. Ejemplo: `/retiro 100000 Nequi`")
+            conn.close()
+            return
+        try:
+            monto = float(parts[1].replace("$", "").replace(".", ""))
+            concepto = " ".join(parts[2:]) if len(parts) > 2 else "Retiro a Banco / Nequi"
+            bankroll = get_user_bankroll(user_id)
+            if monto > bankroll and bankroll > 0:
+                send_message(chat_id, f"⚠️ No puedes retirar más de tu saldo disponible (${bankroll:,.0f} COP).".replace(",", "."))
+                conn.close()
+                return
+            nuevo_bank = max(0.0, bankroll - monto)
+            set_user_bankroll(user_id, nuevo_bank)
+            
+            # Guardar en SQLite como retiro (neto 0 para no computar como pérdida)
+            cursor.execute(
+                "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (user_id, fecha_hoy, "retiro_banco", f"🏦 {concepto}", monto, monto, 0)
+            )
+            conn.commit()
+            
+            sincronizar_archivo_json(nuevo_bank, get_user_debt(user_id), "retiro", f"🏦 {concepto}", monto, 1.0, monto, 0)
+            
+            msg_ret = (
+                "🏦 *¡RETIRO DE GANANCIAS REGISTRADO!*\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"💵 *Monto Retirado:* `${monto:,.0f} COP`\n"
+                f"💳 *Destino:* {concepto}\n"
+                f"💰 *Saldo Restante en Betano:* `${nuevo_bank:,.0f} COP`\n\n"
+                "✨ _¡Felicitaciones! Este dinero está seguro en tu cuenta y NO cuenta como pérdida deportiva._"
+            ).replace(",", ".")
+            send_message(chat_id, msg_ret)
+        except ValueError:
+            send_message(chat_id, "⚠️ Monto inválido. Ejemplo: `/retiro 100000 Nequi`")
+
     # /canales o /links
     elif cmd in ["/canales", "/links", "/vip"]:
         canales_msg = (

@@ -4364,36 +4364,37 @@
     }
 
     function sincronizarConTelegramCloud(modo = 'leer') {
-      if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.CloudStorage) return;
-      const cs = window.Telegram.WebApp.CloudStorage;
+      try {
+        if (!window.Telegram || !window.Telegram.WebApp || !window.Telegram.WebApp.CloudStorage) return;
+        const cs = window.Telegram.WebApp.CloudStorage;
+        if (!cs) return;
 
-      if (modo === 'guardar') {
-        const payload = JSON.stringify({
-          bankroll: bankrollTotal,
-          deuda: deudaRecuperacion,
-          movimientos: movimientos.slice(0, 40),
-          apuestasActivas: apuestasActivas,
-          ts: Date.now()
-        });
-        cs.setItem('bankroll_master_state', payload, () => {});
-      } else if (modo === 'leer') {
-        cs.getItem('bankroll_master_state', (err, val) => {
-          if (!err && val) {
-            try {
-              const data = JSON.parse(val);
-              if (data.bankroll) bankrollTotal = data.bankroll;
-              if (data.deuda !== undefined) deudaRecuperacion = data.deuda;
-              if (data.movimientos) movimientos = data.movimientos;
-              if (data.apuestasActivas) apuestasActivas = data.apuestasActivas;
-              localStorage.setItem('bankroll_total', bankrollTotal);
-              localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
-              localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
-              localStorage.setItem('apuestas_activas', JSON.stringify(apuestasActivas));
-              renderDashboard();
-              renderApuestasActivas();
-            } catch (e) {}
-          }
-        });
+        if (modo === 'guardar' && typeof cs.setItem === 'function') {
+          const payload = JSON.stringify({
+            bankroll: bankrollTotal,
+            deuda: deudaRecuperacion,
+            movimientos: movimientos.slice(0, 40),
+            apuestasActivas: apuestasActivas,
+            ts: Date.now()
+          });
+          cs.setItem('bankroll_master_state', payload, () => {});
+        } else if (modo === 'leer' && typeof cs.getItem === 'function') {
+          cs.getItem('bankroll_master_state', (err, val) => {
+            if (!err && val) {
+              try {
+                const data = JSON.parse(val);
+                if (data.bankroll) bankrollTotal = data.bankroll;
+                if (data.deuda !== undefined) deudaRecuperacion = data.deuda;
+                if (data.movimientos) movimientos = data.movimientos;
+                if (data.apuestasActivas) apuestasActivas = data.apuestasActivas;
+                renderDashboard();
+                renderApuestasActivas();
+              } catch (e) {}
+            }
+          });
+        }
+      } catch (err) {
+        // En plataformas donde CloudStorage no está disponible o falla, continuar normalmente sin interrumpir la app
       }
     }
 

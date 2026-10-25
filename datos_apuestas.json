@@ -1,7 +1,19 @@
 {
-  "bankroll": 607980,
+  "bankroll": 437980,
   "deuda": 170467,
   "movimientos": [
+    {
+      "id": 1792895789641,
+      "code": "RET_9641",
+      "fecha": "24/10/2026 09:36 p. m.",
+      "tipo": "Retiro de Ganancias",
+      "categoria": "retiro",
+      "concepto": "🏦 Retiro de Betano a Banco / Nequi",
+      "cuota": 1,
+      "invertido": 170000,
+      "retorno": 170000,
+      "neto": 0
+    },
     {
       "id": 1792895642191,
       "code": "DEP_2191",
@@ -112,5 +124,5 @@
     }
   ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T02:34:02.194Z"
+  "ultimaActualizacion": "2026-10-25T02:36:29.643Z"
 }

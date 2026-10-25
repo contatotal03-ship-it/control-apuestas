@@ -1378,6 +1378,9 @@
     }
 
     function mostrarCelebracionModal(config) {
+      modalCallbackConfirm = config.onConfirm || null;
+      modalCallbackCancel = config.onCancel || null;
+
       const overlay = document.getElementById('proModalOverlay');
       const card = document.getElementById('proModalCard');
       const badgeWrap = document.querySelector('.pro-badge-wrap');
@@ -1921,6 +1924,7 @@
 
           guardarEstado();
           renderDashboard();
+          switchTab('historial');
           mostrarToast(`¡${resultadosLote.length} boletos importados con éxito a tu caja!`, 'success');
         }
       });

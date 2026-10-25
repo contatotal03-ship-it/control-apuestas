@@ -1,7 +1,19 @@
 {
-  "bankroll": 0,
-  "deuda": 217967,
+  "bankroll": 47500,
+  "deuda": 170467,
   "movimientos": [
+    {
+      "id": 1792895396649,
+      "code": "IMG_6372",
+      "fecha": "24/10/2026 09:29 p. m.",
+      "tipo": "Apuesta Ganada Betano",
+      "categoria": "ganada",
+      "concepto": "Boleto Betano (Brisbane Roar vs Perth Glory) (Ganada #IMG_6372)",
+      "cuota": 1.95,
+      "invertido": 50000,
+      "retorno": 97500,
+      "neto": 47500
+    },
     {
       "id": 1792895378770,
       "code": "IMG_7392",
@@ -52,5 +64,5 @@
     }
   ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T02:29:38.771Z"
+  "ultimaActualizacion": "2026-10-25T02:29:56.650Z"
 }

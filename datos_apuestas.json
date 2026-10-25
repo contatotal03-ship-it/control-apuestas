@@ -1,44 +1,7 @@
 {
-  "bankroll": 207967,
-  "deuda": 112454,
-  "movimientos": [
-    {
-      "id": 1792899477698,
-      "code": "WVQY3EYW",
-      "fecha": "24/10/2026 10:37 p. m.",
-      "tipo": "Apuesta Ganada Betano",
-      "categoria": "ganada",
-      "concepto": "Simple (Ganada ✅) (Ganada #WVQY3EYW)",
-      "cuota": 1.78,
-      "invertido": 122453,
-      "retorno": 217966,
-      "neto": 95513
-    },
-    {
-      "id": 1792899101985,
-      "code": "IMG_0563",
-      "fecha": "24/10/2026 10:31 p. m.",
-      "tipo": "Apuesta Perdida Betano",
-      "categoria": "perdida",
-      "concepto": "Boleto Betano (Flamengo vs Estudiantes) (Perdida #IMG_0563)",
-      "cuota": 2.27,
-      "invertido": 207967,
-      "retorno": 0,
-      "neto": -207967
-    },
-    {
-      "id": 1792899080750,
-      "code": "IMG_9050",
-      "fecha": "24/10/2026 10:31 p. m.",
-      "tipo": "Apuesta Ganada Betano",
-      "categoria": "ganada",
-      "concepto": "Boleto Betano (Besiktas vs Crystal Palace) (Ganada #IMG_9050)",
-      "cuota": 1.78,
-      "invertido": 122453,
-      "retorno": 22453,
-      "neto": 95513
-    }
-  ],
+  "bankroll": 0,
+  "deuda": 0,
+  "movimientos": [],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T03:37:57.717Z"
+  "ultimaActualizacion": "2026-10-25T03:40:18.702Z"
 }

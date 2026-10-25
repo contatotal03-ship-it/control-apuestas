@@ -1,7 +1,19 @@
 {
-  "bankroll": 217966,
-  "deuda": 0,
+  "bankroll": 9999,
+  "deuda": 207967,
   "movimientos": [
+    {
+      "id": 1792892381673,
+      "code": "IMG_8197",
+      "fecha": "24/10/2026 08:39 p. m.",
+      "tipo": "Apuesta Perdida Betano",
+      "categoria": "perdida",
+      "concepto": "Simple (Perdida #IMG_8197)",
+      "cuota": 1.8,
+      "invertido": 207967,
+      "retorno": 0,
+      "neto": -207967
+    },
     {
       "id": 1792892118632,
       "code": "WVQY3EYW",
@@ -16,5 +28,5 @@
     }
   ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T01:35:18.634Z"
+  "ultimaActualizacion": "2026-10-25T01:39:41.674Z"
 }

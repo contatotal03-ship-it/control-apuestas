@@ -1,7 +1,20 @@
 {
-  "bankroll": 122453,
+  "bankroll": 217966,
   "deuda": 0,
-  "movimientos": [],
+  "movimientos": [
+    {
+      "id": 1792892118632,
+      "code": "WVQY3EYW",
+      "fecha": "24/10/2026 08:35 p. m.",
+      "tipo": "Apuesta Ganada Betano",
+      "categoria": "ganada",
+      "concepto": "Simple (Ganada #WVQY3EYW)",
+      "cuota": 1.78,
+      "invertido": 122453,
+      "retorno": 217966,
+      "neto": 95513
+    }
+  ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T01:27:47.018Z"
+  "ultimaActualizacion": "2026-10-25T01:35:18.634Z"
 }

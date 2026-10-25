@@ -4,7 +4,10 @@ import json
 import sqlite3
 import urllib.request
 import urllib.parse
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
+from betano_ocr import analyze_betano_image
 
 # Configurar salida UTF-8 para consola Windows
 if hasattr(sys.stdout, 'reconfigure'):
@@ -13,6 +16,21 @@ if hasattr(sys.stdout, 'reconfigure'):
 # Configuración
 BOT_TOKEN = "8365375317:AAE882Q2wWU0K56p1nS8xc6cnwWLe7OO5iw"
 DB_PATH = os.path.join(os.path.dirname(__file__), "finanzas_apuestas.db")
+
+def download_telegram_photo(file_id, user_id=0):
+    try:
+        file_info = send_telegram_request("getFile", {"file_id": file_id})
+        if file_info and file_info.get("ok"):
+            file_path = file_info.get("result", {}).get("file_path")
+            if file_path:
+                url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+                dest = os.path.join(os.path.dirname(__file__), f"temp_ticket_{user_id}.jpg")
+                urllib.request.urlretrieve(url, dest)
+                return dest
+    except Exception as e:
+        print(f"Error descargando foto: {e}")
+    return None
+
 
 # Inicializar Base de Datos SQLite
 def init_db():
@@ -289,27 +307,100 @@ def handle_message(msg):
         if caption:
             text = caption
         else:
-            msg_foto = (
-                "📸 *¡CAPTURA DE BOLETO RECIBIDA CON ÉXITO!*\n"
-                "━━━━━━━━━━━━━━━━━━━━━\n"
-                "¿Cuál fue el resultado real de tu jugada en Betano?\n\n"
-                "Selecciona una opción para actualizar tu caja y bankroll:"
-            )
+            # Notificar que se está leyendo con IA
+            send_message(chat_id, "🔍 *Leyendo tu boleto de Betano con IA...*", reply_markup=None)
+            
+            # Descargar foto de mayor resolución
+            best_photo = photo[-1]
+            file_id = best_photo.get("file_id")
+            local_img = download_telegram_photo(file_id, user_id)
+            
+            parsed = None
+            if local_img and os.path.exists(local_img):
+                parsed = analyze_betano_image(local_img)
+                
             bankroll = get_user_bankroll(user_id)
             deuda = get_user_debt(user_id)
-            web_url = f"https://contatotal03-ship-it.github.io/control-apuestas/?bank={int(bankroll)}&deuda={int(deuda)}&uid={user_id}"
+            
+            if parsed and parsed.get("status") in ["Ganada", "Perdida"]:
+                estado = parsed["status"]
+                cuota = parsed["cuota"]
+                stake = parsed["stake"] or 20000
+                payout = parsed["payout"] or (int(stake * cuota) if estado == "Ganada" else 0)
+                neto = parsed["net"]
+                partido = parsed["partido"]
+                
+                if estado == "Ganada":
+                    msg_foto = (
+                        "🎉 *¡BOLETO GANADO DETECTADO EN BETANO!*\n"
+                        "━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"⚽ *Partido:* {partido}\n"
+                        f"📊 *Cuota Oficial:* `@{cuota:.2f}`\n"
+                        f"💵 *Apostado:* `${stake:,.0f} COP`\n"
+                        f"🏆 *Cobro Total:* `${payout:,.0f} COP`\n"
+                        f"🟢 *Ganancia Limpia:* `+${neto:,.0f} COP`\n\n"
+                        "👉 *¿Sumar este beneficio a tu Bankroll ahora?*"
+                    ).replace(",", ".")
+                    
+                    reply_markup_foto = {
+                        "inline_keyboard": [
+                            [
+                                {"text": f"🟢 Sí, Sumar +${neto:,.0f} COP a Mi Caja".replace(",", "."), "callback_data": f"act_gana_{int(stake)}_{int(payout)}_{cuota:.2f}"}
+                            ],
+                            [
+                                {"text": "✏️ Descartar / No Registrar", "callback_data": "act_cancel"}
+                            ]
+                        ]
+                    }
+                    send_message(chat_id, msg_foto, reply_markup=reply_markup_foto)
+                    return
+                elif estado == "Perdida":
+                    msg_foto = (
+                        "📉 *BOLETO PERDIDO DETECTADO EN BETANO*\n"
+                        "━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"⚽ *Partido:* {partido}\n"
+                        f"📊 *Cuota Oficial:* `@{cuota:.2f}`\n"
+                        f"💵 *Apostado:* `${stake:,.0f} COP`\n"
+                        f"🔴 *Pérdida a Restar:* `-${stake:,.0f} COP`\n\n"
+                        "👉 *¿Registrar esta pérdida en tu Bankroll?*"
+                    ).replace(",", ".")
+                    
+                    reply_markup_foto = {
+                        "inline_keyboard": [
+                            [
+                                {"text": f"🔴 Sí, Aplicar Pérdida (-${stake:,.0f} COP)".replace(",", "."), "callback_data": f"act_pierde_{int(stake)}_{cuota:.2f}"}
+                            ],
+                            [
+                                {"text": "✏️ Descartar / No Registrar", "callback_data": "act_cancel"}
+                            ]
+                        ]
+                    }
+                    send_message(chat_id, msg_foto, reply_markup=reply_markup_foto)
+                    return
+
+            # Si el estado está en juego o no pudo determinarse automáticamente
+            cuota = (parsed and parsed.get("cuota")) or 1.80
+            stake = (parsed and parsed.get("stake")) or 20000
+            payout = int(round(stake * cuota))
+            neto = payout - stake
+            partido = (parsed and parsed.get("partido")) or "Boleto Betano"
+            
+            msg_foto = (
+                "📸 *BOLETO DETECTADO (EN JUEGO / POR DEFINIR)*\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"⚽ *Partido:* {partido}\n"
+                f"📊 *Cuota:* `@{cuota:.2f}` &bull; *Apostado:* `${stake:,.0f} COP`\n\n"
+                "Selecciona el resultado de tu jugada para registrarla en 1 clic:"
+            ).replace(",", ".")
+            
             reply_markup_foto = {
                 "inline_keyboard": [
                     [
-                        {"text": "✅ ¡La Gané!", "callback_data": "help_gana"},
-                        {"text": "❌ ¡La Perdí!", "callback_data": "help_pierde"}
+                        {"text": f"✅ Ganada (+${neto:,.0f} COP)".replace(",", "."), "callback_data": f"act_gana_{int(stake)}_{int(payout)}_{cuota:.2f}"},
+                        {"text": f"❌ Perdida (-${stake:,.0f} COP)".replace(",", "."), "callback_data": f"act_pierde_{int(stake)}_{cuota:.2f}"}
                     ],
                     [
-                        {"text": "💵 Salí Antes (Cash Out)", "callback_data": "help_cashout"},
-                        {"text": "⚪ Anulada / Reembolso", "callback_data": "help_anulada"}
-                    ],
-                    [
-                        {"text": "📱 Abrir en Calculadora Web Sincronizada", "url": web_url}
+                        {"text": "📱 Abrir en Calculadora Web", "url": f"https://contatotal03-ship-it.github.io/control-apuestas/?bank={int(bankroll)}&deuda={int(deuda)}&uid={user_id}"}
                     ]
                 ]
             }
@@ -992,6 +1083,166 @@ def start_http_server():
         server.serve_forever()
     except Exception as e:
         print(f"Aviso servidor local HTTP: {e}")
+
+def sincronizar_archivo_json(bank, deuda, tipo, concepto, stake, cuota, retorno, neto):
+    try:
+        json_path = os.path.join(os.path.dirname(__file__), "datos_apuestas.json")
+        data = {"bankroll": bank, "deuda": deuda, "movimientos": []}
+        if os.path.exists(json_path):
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        data["bankroll"] = bank
+        data["deuda"] = deuda
+        nuevo_mov = {
+            "id": int(datetime.now().timestamp() * 1000),
+            "code": "BOT_" + datetime.now().strftime("%H%M%S"),
+            "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p"),
+            "tipo": "Apuesta Ganada Betano" if "ganada" in tipo else "Apuesta Perdida Betano",
+            "categoria": "ganada" if "ganada" in tipo else "perdida",
+            "concepto": concepto,
+            "cuota": cuota,
+            "invertido": stake,
+            "retorno": retorno,
+            "neto": neto
+        }
+        movs = data.get("movimientos", [])
+        movs.insert(0, nuevo_mov)
+        data["movimientos"] = movs
+        data["ultimaActualizacion"] = datetime.now().isoformat()
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        threading.Thread(target=push_github_background, daemon=True).start()
+    except Exception as e:
+        print(f"Error sincronizando JSON: {e}")
+
+def handle_callback_query(cq):
+    query_id = cq.get("id")
+    data = cq.get("data", "")
+    msg = cq.get("message", {})
+    chat_id = msg.get("chat", {}).get("id")
+    message_id = msg.get("message_id")
+    user_id = cq.get("from", {}).get("id")
+
+    if not query_id:
+        return
+
+    # Responder al callback para quitar el loader de Telegram
+    send_telegram_request("answerCallbackQuery", {"callback_query_id": query_id, "text": "Procesando..."})
+
+    if data.startswith("act_gana_"):
+        parts = data.split("_")
+        stake = float(parts[2])
+        payout = float(parts[3])
+        cuota = float(parts[4])
+        neto = payout - stake if payout > stake else stake * (cuota - 1)
+
+        # Actualizar en SQLite
+        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=neto, delta_debt=0)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
+        cursor.execute(
+            "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, fecha_hoy, "apuesta_ganada", "Boleto Betano (Escaneado)", stake, payout, neto)
+        )
+        conn.commit()
+        conn.close()
+
+        # Actualizar datos_apuestas.json y GitHub
+        sincronizar_archivo_json(new_bank, new_debt, "apuesta_ganada", "Boleto Betano (Escaneado)", stake, cuota, payout, neto)
+
+        res_txt = (
+            "✅ *¡REGISTRADO EN TU CAJA CON ÉXITO!*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎉 *Beneficio Ganado:* `+${neto:,.0f} COP`\n"
+            f"💰 *Nuevo Bankroll:* `${new_bank:,.0f} COP`\n"
+            f"🛡️ *Déficit Pendiente:* `${new_debt:,.0f} COP`\n\n"
+            "_Sincronizado al instante con la app web y GitHub._"
+        ).replace(",", ".")
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": res_txt,
+            "parse_mode": "Markdown"
+        })
+
+    elif data.startswith("act_pierde_"):
+        parts = data.split("_")
+        stake = float(parts[2])
+        cuota = float(parts[3])
+        neto = -stake
+
+        # Actualizar en SQLite
+        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=-stake, delta_debt=stake)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        fecha_hoy = datetime.now().strftime("%Y-%m-%d %H:%M")
+        cursor.execute(
+            "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, fecha_hoy, "apuesta_perdida", "Boleto Betano (Escaneado)", stake, 0, neto)
+        )
+        conn.commit()
+        conn.close()
+
+        # Actualizar datos_apuestas.json y GitHub
+        sincronizar_archivo_json(new_bank, new_debt, "apuesta_perdida", "Boleto Betano (Escaneado)", stake, cuota, 0, neto)
+
+        res_txt = (
+            "📉 *PÉRDIDA REGISTRADA EN TU CAJA*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🔴 *Monto Restado:* `-${stake:,.0f} COP`\n"
+            f"💰 *Nuevo Bankroll:* `${new_bank:,.0f} COP`\n"
+            f"🚨 *Total por Recuperar:* `${new_debt:,.0f} COP`\n\n"
+            "_Sincronizado al instante con la app web y GitHub._"
+        ).replace(",", ".")
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": res_txt,
+            "parse_mode": "Markdown"
+        })
+
+    elif data == "act_cancel":
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": "ℹ️ Boleto descartado. No se realizaron cambios en tu caja.",
+            "parse_mode": "Markdown"
+        })
+
+    elif data.startswith("res_gana_"):
+        parts = data.split("_")
+        code = parts[2]
+        cuota = float(parts[3]) if len(parts) > 3 else 1.80
+        stake = 20000.0
+        retorno = stake * cuota
+        neto = retorno - stake
+        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=neto, delta_debt=0)
+        sincronizar_archivo_json(new_bank, new_debt, "apuesta_ganada", f"Boleto #{code}", stake, cuota, retorno, neto)
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": f"✅ ¡Boleto #{code} registrado como GANADO!\n\n• Ganancia Neta: +${neto:,.0f} COP\n• Nuevo Bankroll: ${new_bank:,.0f} COP".replace(",", "."),
+            "parse_mode": "Markdown"
+        })
+
+    elif data.startswith("res_pierde_"):
+        parts = data.split("_")
+        code = parts[2]
+        stake = 20000.0
+        neto = -stake
+        new_bank, new_debt = update_user_balance_and_debt(user_id, delta_bank=-stake, delta_debt=stake)
+        sincronizar_archivo_json(new_bank, new_debt, "apuesta_perdida", f"Boleto #{code}", stake, 1.80, 0, neto)
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": f"📉 Boleto #{code} registrado como PERDIDO.\n\n• Pérdida: -${stake:,.0f} COP\n• Nuevo Bankroll: ${new_bank:,.0f} COP".replace(",", "."),
+            "parse_mode": "Markdown"
+        })
+
+    elif data in ["help_gana", "help_pierde", "help_cashout", "help_anulada"]:
+        send_telegram_request("answerCallbackQuery", {"callback_query_id": query_id, "text": "Procesando resultado..."})
+
 
 # Bucle principal de polling
 def run_bot():

@@ -2056,19 +2056,22 @@
       if (feedbackEl) {
         const colorEstado = estado === 'Perdida' ? '#ef4444' : (estado === 'Ganada' ? '#10b981' : '#38bdf8');
         feedbackEl.innerHTML = `
-          <div style="background: rgba(15, 23, 42, 0.95); border: 1.5px solid ${colorEstado}; border-radius: 0.65rem; padding: 0.75rem 0.95rem; margin-top: 0.45rem; color: #f8fafc; font-size: 0.83rem; line-height: 1.45;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.25rem;">
-              <strong style="color: ${colorEstado};">📸 ¡Captura de Betano Escaneada! &bull; Estado: ${estadoLabel}</strong>
-              <span style="font-size: 0.72rem; color: #94a3b8;">Cuota: <strong style="color: #ff5e00;">@ ${cuota.toFixed(2)}</strong></span>
+          <div style="background: rgba(15, 23, 42, 0.95); border: 2px solid ${colorEstado}; border-radius: 0.75rem; padding: 0.9rem 1.1rem; margin-top: 0.5rem; color: #f8fafc; font-size: 0.85rem; line-height: 1.45; box-shadow: 0 4px 20px ${colorEstado}33;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+              <strong style="color: ${colorEstado}; font-size: 0.95rem;">📸 ¡Captura de Betano Escaneada! &bull; ${estadoLabel}</strong>
+              <span style="font-size: 0.8rem; color: #94a3b8;">Cuota: <strong style="color: #ff5e00;">@ ${cuota.toFixed(2)}</strong></span>
             </div>
-            <div>Apostado en Betano: <strong>${formatCOP(montoApostado || 20000)}</strong> ${estado === 'Ganada' ? `&bull; Cobro: <strong style="color: #10b981;">${formatCOP(montoGanancia)}</strong>` : ''}</div>
-            <div style="font-size: 0.76rem; color: ${colorEstado}; margin-top: 0.35rem; font-weight: 700;">
-              ${estado === 'Perdida' 
-                ? `📉 Boleto PERDIDO detectado con exactitud (-${formatCOP(montoApostado || 20000)}). Pulsa abajo en "¡La Perdí!" para aplicar a tu caja en 1 clic.`
-                : (estado === 'Ganada' 
-                  ? `🎉 Boleto GANADO detectado con exactitud (+${formatCOP(beneficioNeto)} netos). Pulsa abajo en "¡La Gané!" para sumar a tu caja.` 
-                  : `👇 Pulsa abajo el resultado de tu jugada para registrarla.`)}
-            </div>
+            <div>Apostado: <strong>${formatCOP(montoApostado || 20000)}</strong> ${estado === 'Ganada' ? `&bull; Cobro Total: <strong style="color: #10b981;">${formatCOP(montoGanancia)}</strong> &bull; Ganancia limpia: <strong style="color: #10b981;">+${formatCOP(beneficioNeto)}</strong>` : ''}</div>
+            
+            ${estado === 'Ganada' ? `
+              <button type="button" onclick="resolverBoletoDirecto('${code}', 'ganada')" style="width: 100%; margin-top: 0.75rem; padding: 0.85rem; background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-weight: 800; font-size: 0.95rem; border: none; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                <span>🟢</span> SUMAR +${formatCOP(beneficioNeto)} AL BANKROLL EN 1 CLIC
+              </button>
+            ` : (estado === 'Perdida' ? `
+              <button type="button" onclick="resolverBoletoDirecto('${code}', 'perdida')" style="width: 100%; margin-top: 0.75rem; padding: 0.85rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; font-weight: 800; font-size: 0.95rem; border: none; border-radius: 0.6rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);">
+                <span>🔴</span> REGISTRAR PÉRDIDA -${formatCOP(montoApostado || 20000)} EN 1 CLIC
+              </button>
+            ` : '')}
           </div>
         `;
       }

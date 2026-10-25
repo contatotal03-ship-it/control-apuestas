@@ -1,7 +1,19 @@
 {
-  "bankroll": 95513,
+  "bankroll": 217966,
   "deuda": 0,
   "movimientos": [
+    {
+      "id": 1792894775777,
+      "code": "DEP_5777",
+      "fecha": "24/10/2026 09:19 p. m.",
+      "tipo": "Depósito / Recarga",
+      "categoria": "ganada",
+      "concepto": "Recarga de Saldo en Betano",
+      "cuota": 1,
+      "invertido": 122453,
+      "retorno": 122453,
+      "neto": 0
+    },
     {
       "id": 1792894744562,
       "code": "WVQY3EYW",
@@ -16,5 +28,5 @@
     }
   ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T02:19:04.562Z"
+  "ultimaActualizacion": "2026-10-25T02:19:35.778Z"
 }

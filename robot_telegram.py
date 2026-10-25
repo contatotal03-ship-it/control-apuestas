@@ -75,7 +75,7 @@ def get_user_bankroll(user_id):
 
 CLOUD_SYNC_ENDPOINT = "https://api.restful-api.dev/objects/ff808181a09d98f701a169b9e0097184"
 
-def sincronizar_nube_realtime(bankroll, deuda):
+def sincronizar_archivo_json(bankroll, deuda, tipo_mov=None, concepto=None, monto_inv=0, cuota=1.0, retorno=0, ganancia_neta=0):
     try:
         json_path = os.path.join(os.path.dirname(__file__), "datos_apuestas.json")
         gh_data = {
@@ -94,11 +94,34 @@ def sincronizar_nube_realtime(bankroll, deuda):
                         gh_data["apuestasActivas"] = existing.get("apuestasActivas", [])
             except Exception:
                 pass
+
+        if tipo_mov and concepto:
+            nuevo_mov = {
+                "id": int(datetime.now().timestamp() * 1000),
+                "code": "AUD_" + str(int(datetime.now().timestamp() * 1000))[-4:],
+                "fecha": datetime.now().strftime("%d/%m/%Y %I:%M %p").lower(),
+                "tipo": "Conciliación Betano" if tipo_mov == "conciliacion" else ("Retiro de Ganancias" if tipo_mov == "retiro" else ("Depósito / Recarga" if tipo_mov == "recarga" else "Ajuste de Capital")),
+                "categoria": "retiro" if tipo_mov == "retiro" else ("ganada" if ganancia_neta >= 0 else "perdida"),
+                "concepto": concepto,
+                "cuota": cuota,
+                "invertido": monto_inv,
+                "retorno": retorno,
+                "neto": ganancia_neta
+            }
+            gh_data["movimientos"].insert(0, nuevo_mov)
+
+        gh_data["bankroll"] = float(bankroll)
+        gh_data["deuda"] = float(deuda)
+        gh_data["ultimaActualizacion"] = datetime.now().isoformat()
+
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(gh_data, f, indent=2, ensure_ascii=False)
         threading.Thread(target=push_github_background, daemon=True).start()
     except Exception as e:
         print(f"Error sincronizando datos desde Telegram: {e}")
+
+def sincronizar_nube_realtime(bankroll, deuda):
+    sincronizar_archivo_json(bankroll, deuda)
 
 def set_user_bankroll(user_id, bankroll):
     conn = sqlite3.connect(DB_PATH)
@@ -506,26 +529,26 @@ def handle_message(msg):
             "• `/recuperar [monto] [cuota]`\n"
             "_Ejemplo:_ `/recuperar 80000 1.80`\n"
             "Calcula cuánto apostar para recuperar tus 80.000 más la apuesta actual sin quemar la caja.\n\n"
-            "🎯 *GESTIÓN DE BANKROLL Y STAKES:*\n"
-            "• `/stake [1-10]` &rarr; Cuánto apostar según tu Stake.\n"
-            "• `/setbank [monto]` &rarr; Configurar tu capital (Ej: `/setbank 1000000`).\n"
+            "💳 *GESTIÓN DE FONDOS Y CONCILIACIÓN CON BETANO:*\n"
+            "• `/conciliar [saldo]` &rarr; Auditar contra Betano y cuadrar en 1 toque (Ej: `/conciliar 217966`).\n"
+            "• `/recarga [monto]` &rarr; Registrar depósito en Betano (Ej: `/recarga 50000`).\n"
+            "• `/retiro [monto] [banco]` &rarr; Retirar a Nequi/Banco (NO es pérdida deportiva).\n"
+            "• `/setbank [monto]` &rarr; Configurar capital inicial.\n"
             "• `/bankroll` &rarr; Ver tu capital actual.\n\n"
             "📊 *REGISTRO DE APUESTAS (4 RESULTADOS):*\n"
             "• `/gana [monto] [cuota] [partido]` &rarr; Ganancia neta.\n"
             "• `/pierde [monto] [partido]` &rarr; Registra pérdida y activa rescate.\n"
             "• `/cashout [apostado] [cobrado] [partido]` &rarr; Cierre anticipado.\n"
             "• `/anulada [monto] [partido]` &rarr; Reembolso al 100% ($0 impacto).\n"
-            "• `/gasto [monto] [canal]` &rarr; Compra de canal VIP.\n"
             "• `/balance` o `/mes` &rarr; Resumen financiero neto.\n"
             "• `/canales` &rarr; Accesos directos a tus canales VIP.\n\n"
-            "📸 *Envío de Fotos:* Envía la captura de tu boleto y el bot te dará los botones interactivos para registrarla en 1 toque.\n\n"
-            "📱 *Calculadora Web en la Nube:* Abre la webapp con el botón inferior."
+            "📸 *Envío de Fotos:* Envía la captura de tu boleto y el bot lo detecta automáticamente."
         )
         reply_markup = {
             "keyboard": [
-                [{"text": "📱 Abrir Calculadora Web"}, {"text": "📊 Ver Balance"}],
-                [{"text": "🎯 Mi Bankroll"}, {"text": "🛡️ Ejemplo Recuperar 80k"}],
-                [{"text": "🏆 Mis Canales VIP"}]
+                [{"text": "📱 Abrir Calculadora Web"}, {"text": "⚖️ Conciliar Betano"}],
+                [{"text": "🎯 Mi Bankroll"}, {"text": "📊 Ver Balance"}],
+                [{"text": "🛡️ Ejemplo Recuperar 80k"}, {"text": "🏆 Mis Canales VIP"}]
             ],
             "resize_keyboard": True
         }
@@ -555,6 +578,9 @@ def handle_message(msg):
         }
         send_message(chat_id, msg_panel, reply_markup=reply_markup_panel)
         conn.close()
+        return
+    elif text in ["⚖️ Conciliar Betano", "⚖️ Conciliar"]:
+        handle_message({"chat": {"id": chat_id}, "from": {"id": user_id}, "text": "/conciliar"})
         return
     elif text == "📊 Ver Balance":
         handle_message({"chat": {"id": chat_id}, "from": {"id": user_id}, "text": "/balance"})
@@ -746,6 +772,78 @@ def handle_message(msg):
             send_message(chat_id, msg_ret)
         except ValueError:
             send_message(chat_id, "⚠️ Monto inválido. Ejemplo: `/retiro 100000 Nequi`")
+
+    # /conciliar o /auditar o /cuadrar [saldo_betano]
+    elif cmd in ["/conciliar", "/auditar", "/cuadrar"]:
+        bankroll = get_user_bankroll(user_id)
+        if len(parts) < 2:
+            msg_conc = (
+                "⚖️ *CONCILIACIÓN Y AUDITORÍA DE SALDO CON BETANO*\n"
+                "━━━━━━━━━━━━━━━━━━━━━\n"
+                f"• Saldo actual registrado en Sistema/Bot: *${bankroll:,.0f} COP*\n\n"
+                "Para verificar si tu caja está cuadrada con tu saldo real en la app de Betano, escribe:\n"
+                "`/conciliar [saldo_real_betano]`\n\n"
+                "_Ejemplo:_ `/conciliar 217966`"
+            ).replace(",", ".")
+            send_message(chat_id, msg_conc)
+            conn.close()
+            return
+
+        try:
+            saldo_real = float(parts[1].replace("$", "").replace(".", "").replace(",", "."))
+            diferencia = saldo_real - bankroll
+
+            if abs(diferencia) < 1.0:
+                msg_ok = (
+                    "✅ *¡SALDO 100% CONCILIADO Y CUADRADO!*\n"
+                    "━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📱 Saldo en Betano: *${saldo_real:,.0f} COP*\n"
+                    f"🤖 Saldo en Sistema: *${bankroll:,.0f} COP*\n"
+                    "⚖️ *Diferencia:* $0 COP (Perfecto)\n\n"
+                    "✨ Todo coincide al centavo. ¡No hay fugas de dinero ni apuestas sin registrar!"
+                ).replace(",", ".")
+                send_message(chat_id, msg_ok)
+            else:
+                signo = "+" if diferencia > 0 else "-"
+                dif_abs = abs(diferencia)
+                if diferencia > 0:
+                    explicacion = (
+                        f"🟢 *SOBRANTE DE ${dif_abs:,.0f} COP EN BETANO*\n"
+                        "Tienes más dinero en Betano del que tiene registrado el bot.\n"
+                        "• _Posibles causas:_ Una apuesta ganada que no subiste, un bono/freebet cobrado o una recarga pendiente."
+                    )
+                else:
+                    explicacion = (
+                        f"🔴 *FALTANTE DE ${dif_abs:,.0f} COP EN SISTEMA*\n"
+                        "Tienes menos dinero en Betano del que calculaba el bot.\n"
+                        "• _Posibles causas:_ Una apuesta perdida en vivo sin registrar, o un retiro bancario no anotado."
+                    )
+
+                msg_dif = (
+                    "⚖️ *RESULTADO DE LA CONCILIACIÓN CON BETANO*\n"
+                    "━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"📱 Saldo Real en Betano: *${saldo_real:,.0f} COP*\n"
+                    f"🤖 Saldo en el Sistema: *${bankroll:,.0f} COP*\n"
+                    f"📊 *Diferencia Detectada:* *{signo}${dif_abs:,.0f} COP*\n\n"
+                    f"{explicacion}\n\n"
+                    "¿Deseas cuadrar el saldo del sistema para que coincida exactamente con Betano ahora mismo?"
+                ).replace(",", ".")
+
+                kb = {
+                    "inline_keyboard": [
+                        [
+                            {"text": f"⚖️ Sí, Cuadrar Saldo a ${saldo_real:,.0f} COP".replace(",", "."), "callback_data": f"act_cuadrar_{int(saldo_real)}_{int(diferencia)}"}
+                        ]
+                    ]
+                }
+                send_telegram_request("sendMessage", {
+                    "chat_id": chat_id,
+                    "text": msg_dif,
+                    "parse_mode": "Markdown",
+                    "reply_markup": kb
+                })
+        except ValueError:
+            send_message(chat_id, "⚠️ Formato inválido. Ejemplo: `/conciliar 250000`")
 
     # /canales o /links
     elif cmd in ["/canales", "/links", "/vip"]:
@@ -1068,6 +1166,44 @@ def handle_callback_query(cq):
             send_message(chat_id, f"🟡 *Boleto #{code} CASH OUT (Salida Anticipada)*\nIndica cuánto apostaste y cuánto te pagó Betano:\n`/cashout [apostado] [cobrado] Boleto #{code}`\n_Ejemplo:_ `/cashout 20000 28000 Boleto #{code}`")
         elif accion == "anulada":
             send_message(chat_id, f"⚪ *Boleto #{code} ANULADO (Reembolso)*\nRegistra el reintegro a tu caja:\n`/anulada [monto] Boleto #{code}`\n_Ejemplo:_ `/anulada 20000 Boleto #{code}`")
+
+    elif data.startswith("act_cuadrar_"):
+        parts = data.split("_")
+        nuevo_saldo = float(parts[2])
+        diferencia = float(parts[3])
+        user_id = cq.get("from", {}).get("id")
+
+        set_user_bankroll(user_id, nuevo_saldo)
+
+        conn_cb = sqlite3.connect(DB_PATH)
+        cur_cb = conn_cb.cursor()
+        signo = "+" if diferencia > 0 else ""
+        concepto = f"⚖️ Conciliación con Betano ({signo}${diferencia:,.0f} COP)".replace(",", ".")
+        cur_cb.execute(
+            "INSERT INTO movimientos (user_id, fecha, tipo, concepto, monto_invertido, monto_retorno, monto_neto) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user_id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "ajuste_conciliacion", concepto, abs(diferencia), abs(diferencia) if diferencia > 0 else 0, diferencia)
+        )
+        conn_cb.commit()
+        conn_cb.close()
+
+        sincronizar_archivo_json(nuevo_saldo, get_user_debt(user_id), "conciliacion", concepto, abs(diferencia), 1.0, abs(diferencia) if diferencia > 0 else 0, diferencia)
+
+        msg_id = msg.get("message_id")
+        msg_confirm = (
+            "✅ *¡SISTEMA Y BETANO 100% CUADRADOS!*\n"
+            "━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💰 Nuevo Saldo Activo: *${nuevo_saldo:,.0f} COP*\n"
+            f"⚖️ Ajuste Aplicado: *{signo}${diferencia:,.0f} COP*\n"
+            "📋 Registro guardado en auditoría contable.\n\n"
+            "🚀 Todo el dashboard y el bot ahora están sincronizados y al día."
+        ).replace(",", ".")
+
+        send_telegram_request("editMessageText", {
+            "chat_id": chat_id,
+            "message_id": msg_id,
+            "text": msg_confirm,
+            "parse_mode": "Markdown"
+        })
 
 # Servidor HTTP local para sincronización bidireccional inmediata con GitHub
 import threading

@@ -658,9 +658,10 @@
       <div class="kpi-box kpi-bank">
         <div class="kpi-label">
           <span>Bankroll Real</span>
-          <span style="display: flex; gap: 0.35rem; align-items: center;">
+          <span style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
             <button type="button" onclick="recargarCajaModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; border-radius: 0.35rem; padding: 0.15rem 0.45rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;" title="Ingresar recarga / depósito">➕ Recargar</button>
             <button type="button" onclick="retirarCajaModal()" style="background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #c084fc; border-radius: 0.35rem; padding: 0.15rem 0.45rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;" title="Sacar dinero de Betano a tu banco">🏦 Retirar</button>
+            <button type="button" onclick="conciliarBetanoModal()" style="background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; color: #38bdf8; border-radius: 0.35rem; padding: 0.15rem 0.45rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;" title="Auditar y conciliar con Betano">⚖️ Conciliar</button>
             <span style="cursor: pointer; color: #38bdf8;" onclick="ajustarBankrollModal()" title="Editar Bankroll">✏️</span>
           </span>
         </div>
@@ -4362,6 +4363,101 @@
             ],
             botonTexto: 'Excelente',
             confetti: true
+          });
+        }
+      });
+    }
+
+    function conciliarBetanoModal() {
+      const saldoSistema = bankrollTotal;
+      mostrarCelebracionModal({
+        tipo: 'normal',
+        badge: 'AUDITORÍA & CONCILIACIÓN',
+        icon: '⚖️',
+        titulo: 'Conciliar Caja con Betano',
+        subtitulo: 'Compara tu saldo registrado en la app contra lo que muestra tu cuenta de Betano',
+        notes: [
+          `📊 <strong>Saldo Actual en el Sistema:</strong> ${formatCOP(saldoSistema)}`,
+          `📱 Abre tu cuenta de Betano y mira tu saldo en pantalla.`,
+          `Ingresa el saldo exacto de Betano a continuación para auditar:`
+        ],
+        botonTexto: '⚖️ Auditar Saldo',
+        onConfirm: () => {
+          mostrarModalInputPro({
+            badge: 'COMPARAR SALDO BETANO',
+            icon: '⚖️',
+            tipo: 'bankroll',
+            accentColor: '#38bdf8',
+            titulo: 'Ingresar Saldo Real de Betano',
+            subtitulo: `Saldo en Sistema: ${formatCOP(saldoSistema)}. Ingresa lo que dice Betano:`,
+            instruccion: 'Saldo visible en tu cuenta de Betano ($ COP):',
+            placeholder: 'Ej: 217966',
+            valorDefault: Math.round(saldoSistema),
+            botonConfirmar: '⚖️ Auditar y Cuadrar Saldo',
+            atajos: [Math.round(saldoSistema), 50000, 100000, 200000, 500000].filter((v, i, a) => v >= 0 && a.indexOf(v) === i),
+            onConfirm: (valStr) => {
+              const valBetano = parseFloat(valStr.replace(/\./g, '').replace(/,/g, ''));
+              if (isNaN(valBetano) || valBetano < 0) {
+                return mostrarToast('Por favor ingresa un monto válido.', 'warning');
+              }
+              const diferencia = valBetano - saldoSistema;
+
+              if (diferencia === 0) {
+                mostrarCelebracionModal({
+                  tipo: 'exito',
+                  badge: '¡CAJA 100% CUADRADA!',
+                  icon: '🎯',
+                  titulo: '¡Saldos Perfectamente Conciliados!',
+                  subtitulo: 'Tu registro coincide exactamente con Betano.',
+                  notes: [
+                    `✅ Saldo en Betano: ${formatCOP(valBetano)}`,
+                    `✅ Saldo en el Sistema: ${formatCOP(saldoSistema)}`,
+                    `✨ Diferencia: $ 0 COP. No hay jugadas extraviadas ni descuadres.`
+                  ],
+                  botonTexto: '¡Excelente!'
+                });
+              } else {
+                const diffTxt = diferencia > 0 ? `+${formatCOP(diferencia)} (A Favor)` : `-${formatCOP(Math.abs(diferencia))} (Faltante)`;
+                const badgeColor = diferencia > 0 ? '#10b981' : '#ef4444';
+                const iconRes = diferencia > 0 ? '📈' : '📉';
+
+                mostrarCelebracionModal({
+                  tipo: diferencia > 0 ? 'exito' : 'perdida',
+                  badge: 'AUDITORÍA CON DIFERENCIA',
+                  icon: iconRes,
+                  titulo: diferencia > 0 ? '¡Tienes Más Saldo en Betano!' : 'Descuadre: Faltante en Betano',
+                  subtitulo: `Diferencia detectada: ${diffTxt}`,
+                  notes: [
+                    `📱 Saldo Real en Betano: <strong>${formatCOP(valBetano)}</strong>`,
+                    `💻 Saldo en este Sistema: <strong>${formatCOP(saldoSistema)}</strong>`,
+                    `<strong style="color: ${badgeColor}; font-size: 1.05rem;">Diferencia / Descuadre: ${diffTxt}</strong>`,
+                    diferencia > 0 
+                      ? '👉 Tienes más dinero en Betano (ganaste una apuesta no anotada o hiciste un depósito).' 
+                      : '👉 Tienes menos dinero en Betano (un retiro bancario no anotado o pérdida en vivo).',
+                    `Pulsa abajo para cuadrar tu Bankroll oficial a <strong>${formatCOP(valBetano)}</strong>:`
+                  ],
+                  botonTexto: `⚖️ Cuadrar Caja a ${formatCOP(valBetano)}`,
+                  onConfirm: () => {
+                    bankrollTotal = valBetano;
+                    movimientos.unshift({
+                      id: Date.now(),
+                      code: 'AUD_' + Date.now().toString().slice(-4),
+                      fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+                      tipo: 'Conciliación Betano',
+                      categoria: diferencia > 0 ? 'ganada' : 'perdida',
+                      concepto: `⚖️ Conciliación con Betano (${diffTxt})`,
+                      cuota: 1.0,
+                      invertido: Math.abs(diferencia),
+                      retorno: diferencia > 0 ? Math.abs(diferencia) : 0,
+                      neto: diferencia
+                    });
+                    guardarEstado();
+                    renderDashboard();
+                    mostrarToast(`¡Caja cuadrada y conciliada a ${formatCOP(bankrollTotal)}!`, 'success');
+                  }
+                });
+              }
+            }
           });
         }
       });

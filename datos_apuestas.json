@@ -1,7 +1,19 @@
 {
-  "bankroll": 0,
-  "deuda": 217967,
+  "bankroll": 1047500.0,
+  "deuda": 0.0,
   "movimientos": [
+    {
+      "id": 1792893801279,
+      "code": "BOT_210321",
+      "fecha": "24/10/2026 09:03 PM",
+      "tipo": "Apuesta Ganada Betano",
+      "categoria": "ganada",
+      "concepto": "Boleto Betano (Escaneado)",
+      "cuota": 1.95,
+      "invertido": 50000.0,
+      "retorno": 97500.0,
+      "neto": 47500.0
+    },
     {
       "id": 1792892416997,
       "code": "IMG_4483",
@@ -40,5 +52,5 @@
     }
   ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T01:40:16.997Z"
+  "ultimaActualizacion": "2026-10-24T21:03:21.279648"
 }

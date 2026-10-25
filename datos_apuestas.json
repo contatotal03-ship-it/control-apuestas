@@ -1,7 +1,20 @@
 {
-  "bankroll": 0,
+  "bankroll": 95513,
   "deuda": 0,
-  "movimientos": [],
+  "movimientos": [
+    {
+      "id": 1792899080750,
+      "code": "IMG_9050",
+      "fecha": "24/10/2026 10:31 p. m.",
+      "tipo": "Apuesta Ganada Betano",
+      "categoria": "ganada",
+      "concepto": "Boleto Betano (Besiktas vs Crystal Palace) (Ganada #IMG_9050)",
+      "cuota": 1.78,
+      "invertido": 122453,
+      "retorno": 22453,
+      "neto": 95513
+    }
+  ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T03:27:56.554Z"
+  "ultimaActualizacion": "2026-10-25T03:31:20.751Z"
 }

@@ -1,5 +1,5 @@
 {
-  "bankroll": 437980,
+  "bankroll": 2000000,
   "deuda": 170467,
   "movimientos": [
     {
@@ -124,5 +124,5 @@
     }
   ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T02:36:29.643Z"
+  "ultimaActualizacion": "2026-10-25T02:52:05.097Z"
 }

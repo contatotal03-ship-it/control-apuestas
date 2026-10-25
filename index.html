@@ -770,8 +770,8 @@
             <span>⚡</span> Cargar Enlace
           </button>
           <label style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; padding: 0.85rem 1.15rem; background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; color: #38bdf8; font-weight: 800; border-radius: 0.75rem; font-size: 0.85rem; white-space: nowrap; transition: all 0.2s; box-shadow: 0 4px 12px rgba(56,189,248,0.25);">
-            <span>📷</span> Subir / Pegar Imagen
-            <input type="file" id="inputFotoBetano" accept="image/*" style="display: none;" onchange="procesarArchivoImagen(this)">
+            <span>📷</span> Subir Imagen (1 o Varias a la vez)
+            <input type="file" id="inputFotoBetano" accept="image/*" multiple style="display: none;" onchange="procesarArchivoImagen(this)">
           </label>
           <button type="button" class="btn" style="width: auto; padding: 0.85rem 1.15rem; background: rgba(239, 68, 68, 0.15); border: 1.5px solid #ef4444; color: #fca5a5; font-weight: 800; border-radius: 0.75rem; font-size: 0.85rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; transition: all 0.2s;" onclick="limpiarPantallaBoleto()" title="Limpiar la pantalla y vaciar el boleto actual">
             <span>🧹</span> Limpiar Pantalla
@@ -1784,11 +1784,147 @@
       analizarLinkBetano();
     }
 
-    // --- LECTOR DE IMÁGENES Y CAPTURAS DE BETANO CON IA OCR (Tesseract.js) ---
+    // --- LECTOR DE IMÁGENES Y CAPTURAS DE BETANO CON IA OCR (Individual y Por Lotes) ---
     function procesarArchivoImagen(input) {
-      if (!input || !input.files || !input.files[0]) return;
-      procesarImagenFile(input.files[0]);
+      if (!input || !input.files || input.files.length === 0) return;
+      if (input.files.length === 1) {
+        procesarImagenFile(input.files[0]);
+      } else {
+        procesarMultiplesArchivosImagenes(Array.from(input.files));
+      }
     }
+
+    async function procesarMultiplesArchivosImagenes(files) {
+      if (!files || files.length === 0) return;
+      const ocrBox = document.getElementById('ocrLoadingFeedback');
+      const ocrStatus = document.getElementById('ocrStatusText');
+      const ocrPercent = document.getElementById('ocrPercentText');
+      const ocrProgress = document.getElementById('ocrProgressBar');
+
+      if (ocrBox) ocrBox.style.display = 'block';
+
+      const resultadosLote = [];
+      let totalApostadoLote = 0;
+      let totalCobradoLote = 0;
+      let totalNetoLote = 0;
+      let ganadasCount = 0;
+      let perdidasCount = 0;
+      let cashoutCount = 0;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const pct = Math.round(((i + 1) / files.length) * 100);
+        if (ocrStatus) ocrStatus.innerText = `Escaneando boleto ${i + 1} de ${files.length} (${file.name})...`;
+        if (ocrProgress) ocrProgress.style.width = `${pct}%`;
+        if (ocrPercent) ocrPercent.innerText = `${pct}%`;
+
+        try {
+          const resp = await fetch('http://127.0.0.1:8765/api/ocr', {
+            method: 'POST',
+            body: file,
+            headers: { 'Content-Type': 'application/octet-stream' }
+          });
+          if (resp.ok) {
+            const jsonRes = await resp.json();
+            if (jsonRes && jsonRes.success && jsonRes.data) {
+              const d = jsonRes.data;
+              resultadosLote.push({ file: file.name, data: d });
+              const st = d.status || 'en_juego';
+              const stake = d.stake || 0;
+              const payout = d.payout || 0;
+              const net = d.net || 0;
+
+              if (st === 'Ganada') ganadasCount++;
+              else if (st === 'Perdida') perdidasCount++;
+              else if (st === 'Cashout') cashoutCount++;
+
+              totalApostadoLote += stake;
+              totalCobradoLote += payout;
+              totalNetoLote += net;
+            }
+          }
+        } catch (e) {
+          console.error('Error escaneando lote', file.name, e);
+        }
+      }
+
+      if (ocrBox) ocrBox.style.display = 'none';
+
+      if (resultadosLote.length === 0) {
+        return mostrarToast('No se pudieron procesar las imágenes en lote.', 'warning');
+      }
+
+      mostrarCelebracionModal({
+        tipo: totalNetoLote >= 0 ? 'ganada' : 'perdida',
+        badge: `PROCESAMIENTO POR LOTE (${resultadosLote.length} BOLETOS)`,
+        icon: '📑',
+        titulo: `¡${resultadosLote.length} Boletos Escaneados con Éxito!`,
+        subtitulo: `Resumen de Capturas Analizadas`,
+        metrics: [
+          { label: 'Total Boletos', valor: `${resultadosLote.length} boletos`, color: '#38bdf8' },
+          { label: 'Desglose', valor: `🟢 ${ganadasCount}G | 🔴 ${perdidasCount}P | 🟡 ${cashoutCount}C`, color: '#fbbf24' },
+          { label: 'Total Invertido', valor: formatCOP(totalApostadoLote), color: '#c084fc' },
+          { label: 'Total Cobrado', valor: formatCOP(totalCobradoLote), color: '#34d399' },
+          { label: 'Balance Neto del Lote', valor: (totalNetoLote >= 0 ? `+${formatCOP(totalNetoLote)}` : formatCOP(totalNetoLote)), color: totalNetoLote >= 0 ? '#10b981' : '#f87171', highlight: totalNetoLote >= 0 ? 'green' : '', fullWidth: true }
+        ],
+        notes: [
+          '⚡ <strong>Registro Automático:</strong> Puedes importar todos estos boletos a tu historial con un solo clic.',
+          `💰 El impacto neto en tu Bankroll será de <strong>${totalNetoLote >= 0 ? '+' : ''}${formatCOP(totalNetoLote)}</strong>.`
+        ],
+        botonTexto: `📥 Importar y Aplicar Todos (${resultadosLote.length} Boletos)`,
+        onConfirm: () => {
+          const fechaStr = new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+          resultadosLote.forEach((item, idx) => {
+            const d = item.data;
+            const code = 'LOT_' + Date.now().toString().slice(-4) + '_' + (idx + 1);
+            const st = d.status || 'en_juego';
+            const cuota = d.cuota || 1.80;
+            const stake = d.stake || 0;
+            const payout = d.payout || 0;
+            const net = d.net || 0;
+            const partido = d.partido || 'Boleto Betano';
+
+            movimientos.unshift({
+              id: Date.now() + idx,
+              code: code,
+              fecha: fechaStr,
+              tipo: st === 'Ganada' ? 'Apuesta Ganada' : (st === 'Perdida' ? 'Apuesta Perdida' : (st === 'Cashout' ? 'Cash Out Betano' : 'Apuesta en Juego')),
+              categoria: st === 'Ganada' ? 'ganada' : (st === 'Perdida' ? 'perdida' : 'anulada'),
+              concepto: `${partido} (@ ${cuota.toFixed(2)})`,
+              cuota: cuota,
+              invertido: stake,
+              retorno: payout,
+              neto: net
+            });
+          });
+
+          bankrollTotal += totalNetoLote;
+          if (totalNetoLote < 0) {
+            deudaRecuperacion += Math.abs(totalNetoLote);
+          } else if (totalNetoLote > 0 && deudaRecuperacion > 0) {
+            deudaRecuperacion = Math.max(0, deudaRecuperacion - totalNetoLote);
+          }
+
+          guardarEstado();
+          renderDashboard();
+          mostrarToast(`¡${resultadosLote.length} boletos importados con éxito a tu caja!`, 'success');
+        }
+      });
+    }
+
+    // Soporte Drag & Drop para arrastrar carpetas o múltiples capturas directamente al navegador
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const imageFiles = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        if (imageFiles.length === 1) {
+          procesarImagenFile(imageFiles[0]);
+        } else if (imageFiles.length > 1) {
+          procesarMultiplesArchivosImagenes(imageFiles);
+        }
+      }
+    });
 
     async function procesarImagenFile(file) {
       if (!file || !file.type.startsWith('image/')) {

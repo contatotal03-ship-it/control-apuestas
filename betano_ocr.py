@@ -6,14 +6,15 @@ def run_windows_ocr(image_path):
     """Ejecuta el OCR nativo de Windows (Windows.Media.Ocr) en el archivo de imagen especificado."""
     if not os.path.exists(image_path):
         return ""
-    ps_script_path = os.path.join(os.path.dirname(__file__), "ocr_test.ps1")
+    abs_img = os.path.abspath(image_path)
+    ps_script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "ocr_test.ps1"))
     try:
         res = subprocess.run(
-            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps_script_path, "-ImagePath", image_path],
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ps_script_path, "-ImagePath", abs_img],
             capture_output=True,
             text=True,
             errors="replace",
-            timeout=20
+            timeout=25
         )
         return res.stdout.strip()
     except Exception as e:
@@ -64,32 +65,53 @@ def parse_betano_ticket(text):
     # 3. Monto Apostado y Cobro
     stake = 0
     payout = 0
-    
-    # Simple $50.000 / Doble $ 10.000 / Simple $122.453
-    header_stake = re.search(r'(?:Simple|Doble|Triple|Combinada)\s*[\$]?\s*(\d{1,3}(?:\.\d{3})+)', text, re.IGNORECASE)
-    if header_stake:
-        stake = int(header_stake.group(1).replace('.', ''))
-        
-    # Ganancias $97.500 / $217.966
-    payout_match = re.search(r'(?:Ganancias?|Cobro|Retorno)\s*[\$]?\s*(\d{1,3}(?:\.\d{3})+)', text, re.IGNORECASE)
-    if payout_match:
-        payout = int(payout_match.group(1).replace('.', ''))
-    elif status == "Ganada" and stake > 0:
-        payout = int(round(stake * odds))
-        
-    if not stake:
-        all_money = re.findall(r'[\$]\s*(\d{1,3}(?:\.\d{3})+)', text)
-        if all_money:
-            stake = int(all_money[0].replace('.', ''))
-            if len(all_money) > 1 and status == "Ganada" and not payout:
-                payout = int(all_money[-1].replace('.', ''))
+
+    # Normalizar artefactos OCR donde $ se lee como 5 o SI
+    text_norm = re.sub(r'\bSI\s*([0-9])', r'$\1', text)
+    text_norm = re.sub(r'\b5(\d{1,2}\.\d{3})\b', r'$\1', text_norm)
+
+    amounts = []
+    for m in re.finditer(r'[\$]\s*(\d{1,3}(?:\.\d{3})+)', text_norm):
+        val = int(m.group(1).replace('.', ''))
+        if val >= 500:
+            amounts.append(val)
+
+    # Intentar también header_stake
+    header_stake = re.search(r'(?:Simple|Doble|Triple|Combinada)\s*[\$]?\s*(\d{1,3}(?:\.\d{3})+)', text_norm, re.IGNORECASE)
+    h_val = int(header_stake.group(1).replace('.', '')) if header_stake else 0
+    if h_val >= 500 and not amounts:
+        amounts.append(h_val)
+
+    if amounts:
+        if status == "Ganada":
+            if len(amounts) >= 2:
+                stake = amounts[0]
+                payout = amounts[1]
+            else:
+                stake = amounts[0]
+                payout = int(round(stake * odds))
+        elif status == "Cashout":
+            if len(amounts) >= 2:
+                stake = amounts[0]
+                payout = amounts[1]
+            else:
+                stake = amounts[0]
+                payout = stake
+        elif status == "Perdida":
+            stake = amounts[0]
+            payout = 0
+        else:
+            stake = amounts[0]
+            payout = 0
 
     # Si fue perdida, el cobro es $0
     if status == "Perdida":
         payout = 0
         net = -stake
     elif status == "Ganada":
-        net = (payout - stake) if payout > stake else int(round(stake * (odds - 1)))
+        net = (payout - stake) if payout >= stake else int(round(stake * (odds - 1)))
+    elif status == "Cashout":
+        net = payout - stake
     else:
         net = 0
 

@@ -1081,6 +1081,25 @@ class SyncHTTPHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 self.send_response(500)
                 self.end_headers()
+        elif self.path == '/api/ocr':
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length)
+            try:
+                temp_img_path = os.path.join(os.path.dirname(__file__), "temp_web_upload.jpg")
+                with open(temp_img_path, 'wb') as f:
+                    f.write(body)
+                res = analyze_betano_image(temp_img_path)
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "data": res}, ensure_ascii=False).encode('utf-8'))
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode('utf-8'))
 
     def log_message(self, format, *args):
         pass  # Silenciar logs para no saturar la consola

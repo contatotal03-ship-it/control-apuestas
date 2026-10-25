@@ -51,7 +51,7 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS user_config (
         user_id INTEGER PRIMARY KEY,
-        bankroll REAL DEFAULT 1000000,
+        bankroll REAL DEFAULT 0.0,
         stake_pct REAL DEFAULT 1.0,
         deuda REAL DEFAULT 0
     )
@@ -71,7 +71,7 @@ def get_user_bankroll(user_id):
     conn.close()
     if row and row[0] is not None:
         return float(row[0])
-    return 1000000.0  # Default: 1.000.000 COP
+    return 0.0  # Default: 0 COP (El usuario ingresa su capital real)
 
 CLOUD_SYNC_ENDPOINT = "https://api.restful-api.dev/objects/ff808181a09d98f701a169b9e0097184"
 
@@ -684,15 +684,31 @@ def handle_message(msg):
 
     elif cmd == "/setbank":
         if len(parts) < 2:
-            send_message(chat_id, "⚠️ Indica tu nuevo capital. Ejemplo: `/setbank 1200000`")
+            send_message(chat_id, "⚠️ Indica tu capital real. Ejemplo: `/setbank 200000`")
             conn.close()
             return
         try:
             nuevo_bank = float(parts[1].replace("$", "").replace(".", ""))
             set_user_bankroll(user_id, nuevo_bank)
-            send_message(chat_id, f"✅ *Bankroll actualizado:* ${nuevo_bank:,.0f} COP.\n\nAhora tus cálculos de `/recuperar` y `/stake` se ajustarán a esta caja.")
+            sincronizar_archivo_json(nuevo_bank, get_user_debt(user_id), "ajuste_capital", "Capital Inicial Betano", nuevo_bank, 1.0, nuevo_bank, 0)
+            send_message(chat_id, f"✅ *Capital Real Configurado:* ${nuevo_bank:,.0f} COP.\n\nA partir de este valor se sumarán tus ganancias y se restarán tus pérdidas.")
         except ValueError:
-            send_message(chat_id, "⚠️ Monto inválido. Ejemplo: `/setbank 1000000`")
+            send_message(chat_id, "⚠️ Monto inválido. Ejemplo: `/setbank 200000`")
+
+    elif cmd in ["/recarga", "/deposito", "/recargar"]:
+        if len(parts) < 2:
+            send_message(chat_id, "⚠️ Indica el valor de tu recarga. Ejemplo: `/recarga 50000`")
+            conn.close()
+            return
+        try:
+            monto = float(parts[1].replace("$", "").replace(".", ""))
+            bankroll = get_user_bankroll(user_id)
+            nuevo_bank = bankroll + monto
+            set_user_bankroll(user_id, nuevo_bank)
+            sincronizar_archivo_json(nuevo_bank, get_user_debt(user_id), "recarga", "Recarga en Betano", monto, 1.0, monto, 0)
+            send_message(chat_id, f"💳 *¡Recarga de ${monto:,.0f} COP añadida a tu caja!*\n\n• Tu nuevo saldo disponible es: *${nuevo_bank:,.0f} COP*".replace(",", "."))
+        except ValueError:
+            send_message(chat_id, "⚠️ Monto inválido. Ejemplo: `/recarga 50000`")
 
     # /canales o /links
     elif cmd in ["/canales", "/links", "/vip"]:

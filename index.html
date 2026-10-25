@@ -657,10 +657,13 @@
       <div class="kpi-box kpi-bank">
         <div class="kpi-label">
           <span>Bankroll Real</span>
-          <span style="cursor: pointer; color: #38bdf8;" onclick="ajustarBankrollModal()" title="Editar Bankroll">✏️</span>
+          <span style="display: flex; gap: 0.35rem; align-items: center;">
+            <button type="button" onclick="recargarCajaModal()" style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; border-radius: 0.35rem; padding: 0.1rem 0.4rem; font-size: 0.68rem; font-weight: 800; cursor: pointer;">➕ Recargar</button>
+            <span style="cursor: pointer; color: #38bdf8;" onclick="ajustarBankrollModal()" title="Editar Bankroll">✏️</span>
+          </span>
         </div>
-        <div class="kpi-val" id="liveBankroll" style="color: #38bdf8;">$ 792.033 COP</div>
-        <div class="kpi-sub" id="liveBankrollSub">Stake 1 (1%) = $ 7.920 COP</div>
+        <div class="kpi-val" id="liveBankroll" style="color: #38bdf8;">$ 0 COP</div>
+        <div class="kpi-sub" id="liveBankrollSub">Stake 1 (1%) = $ 0 COP</div>
       </div>
 
       <div class="kpi-box kpi-debt" id="boxDeuda">
@@ -668,13 +671,13 @@
           <span>Déficit / Costo a Recuperar</span>
           <span style="cursor: pointer; color: #ef4444;" onclick="ajustarDeudaModal()" title="Ajustar Déficit">✏️</span>
         </div>
-        <div class="kpi-val" id="liveDeuda" style="color: #ef4444;">$ 207.967 COP</div>
-        <div class="kpi-sub" id="liveDeudaSub">Déficit pendiente por recuperar</div>
+        <div class="kpi-val" id="liveDeuda" style="color: #10b981;">$ 0 COP</div>
+        <div class="kpi-sub" id="liveDeudaSub">¡Caja libre de deudas ($0)!</div>
       </div>
 
       <div class="kpi-box kpi-profit">
         <div class="kpi-label">Beneficio Neto Total</div>
-        <div class="kpi-val" id="liveNeto" style="color: var(--red);">- $ 207.967 COP</div>
+        <div class="kpi-val" id="liveNeto" style="color: #94a3b8;">$ 0 COP</div>
         <div class="kpi-sub" id="liveNetoSub">Rendimiento global</div>
       </div>
 
@@ -1658,31 +1661,9 @@
     let movimientos = JSON.parse(localStorage.getItem('movimientos_apuestas')) || [];
     let apuestasActivas = JSON.parse(localStorage.getItem('apuestas_activas')) || [];
 
-    // Migración inicial única: solo la primera vez que se visita se cargan los valores reales iniciales
-    if (!localStorage.getItem('initial_v2_migrated')) {
-      localStorage.setItem('initial_v2_migrated', 'true');
-      bankrollTotal = 792033;
-      deudaRecuperacion = 207967;
-      movimientos = [{
-        id: 1792770000000,
-        code: "IMG_9437",
-        fecha: "23/10/2026 12:00",
-        tipo: "Apuesta Perdida Betano",
-        categoria: "perdida",
-        concepto: "Simple #IMG_9437 (Flamengo vs Estudiantes)",
-        cuota: 2.27,
-        invertido: 207967,
-        retorno: 0,
-        neto: -207967
-      }];
-      localStorage.setItem('bankroll_total', bankrollTotal);
-      localStorage.setItem('deuda_recuperacion', deudaRecuperacion);
-      localStorage.setItem('movimientos_apuestas', JSON.stringify(movimientos));
-      localStorage.setItem('last_local_update', Date.now().toString());
-    } else {
-      if (isNaN(bankrollTotal)) bankrollTotal = 792033;
-      if (isNaN(deudaRecuperacion)) deudaRecuperacion = 0;
-    }
+    // Por defecto la caja empieza en $0 COP (el usuario define su saldo real o recargas)
+    if (isNaN(bankrollTotal)) bankrollTotal = 0;
+    if (isNaN(deudaRecuperacion)) deudaRecuperacion = 0;
     let currentCalculatedStake = { montoApostar: 10000, retornoBruto: 16700, beneficioLimpio: 6700, cuota: 1.67 };
     let casoActual = 'normal'; // 'normal' | 'rescate' | 'freebet'
     let pasosSeleccionados = 1;
@@ -4197,14 +4178,16 @@
       mostrarConfirmacionPro({
         badge: 'REINICIAR TODO',
         icon: '⚠️',
-        titulo: '¿Reiniciar Historial Completo?',
-        mensaje: 'Se borrarán todos los movimientos registrados, las apuestas en juego y el déficit se reiniciará a $0 COP. Tu bankroll se conservará. ¿Deseas continuar?',
-        botonConfirmar: 'Sí, Reiniciar Todo',
+        titulo: '¿Reiniciar Historial y Saldo?',
+        mensaje: 'Se borrarán todos los movimientos registrados, apuestas en juego y el bankroll se reiniciará a $0 COP para comenzar limpio desde cero. ¿Deseas continuar?',
+        botonConfirmar: 'Sí, Reiniciar Todo a $0',
         botonCancelar: 'Cancelar',
         onConfirm: () => {
           movimientos = [];
           apuestasActivas = [];
           deudaRecuperacion = 0;
+          bankrollTotal = 0;
+          localStorage.setItem('bankroll_total', '0');
           localStorage.setItem('user_did_reset', 'true');
           localStorage.setItem('last_local_update', Date.now().toString());
           localStorage.setItem('movimientos_apuestas', '[]');
@@ -4218,9 +4201,62 @@
           renderDashboard();
           renderApuestasActivas();
           try { limpiarPantallaBoleto(); } catch (e) {}
-          mostrarToast('Historial, apuestas en juego y déficit reiniciados por completo.', 'success');
+          mostrarToast('Caja y movimientos reiniciados a $0 COP. Toca ➕ Recargar para ingresar tu saldo.', 'success');
         }
       });
+    }
+
+    function recargarCajaModal() {
+      mostrarModalInputPro({
+        badge: 'RECARGA DE CAJA',
+        icon: '💳',
+        tipo: 'bankroll',
+        accentColor: '#10b981',
+        titulo: 'Recargar Saldo en Betano',
+        subtitulo: 'Añade el valor de tu nuevo depósito para que sume a tu capital real',
+        instruccion: 'Ingresa el valor recargado ($ COP):',
+        placeholder: 'Ej: 50000',
+        valorDefault: 50000,
+        botonConfirmar: '➕ Añadir Recarga a Caja',
+        atajos: [20000, 50000, 100000, 200000],
+        onConfirm: (valStr) => {
+          const val = parseFloat(valStr.replace(/\./g, '').replace(/,/g, ''));
+          if (val && !isNaN(val) && val > 0) {
+            bankrollTotal += val;
+            movimientos.unshift({
+              id: Date.now(),
+              code: 'DEP_' + Date.now().toString().slice(-4),
+              fecha: new Date().toLocaleDateString('es-CO') + ' ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }),
+              tipo: 'Depósito / Recarga',
+              categoria: 'ganada',
+              concepto: 'Recarga de Saldo en Betano',
+              cuota: 1.0,
+              invertido: val,
+              retorno: val,
+              neto: 0
+            });
+            guardarEstado();
+            renderDashboard();
+            mostrarToast(`¡Recarga de ${formatCOP(val)} agregada! Nuevo saldo: ${formatCOP(bankrollTotal)}`, 'success');
+          }
+        }
+      });
+    }
+
+    function verificarCajaEnCero() {
+      if (bankrollTotal <= 0) {
+        mostrarConfirmacionPro({
+          badge: 'CAJA EN CERO ($0)',
+          icon: '⚠️',
+          titulo: '¡Tu Caja ha llegado a $0 COP!',
+          mensaje: 'Tu saldo disponible se ha agotado. ¿Deseas ingresar una recarga para continuar calculando apuestas y stakes disciplinados?',
+          botonConfirmar: '💳 Sí, Ingresar Recarga',
+          botonCancelar: 'Dejar en $0',
+          onConfirm: () => {
+            recargarCajaModal();
+          }
+        });
+      }
     }
 
     function exportarBackupJSON() {

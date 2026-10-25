@@ -1,56 +1,7 @@
 {
-  "bankroll": 1047500.0,
+  "bankroll": 0.0,
   "deuda": 0.0,
-  "movimientos": [
-    {
-      "id": 1792893801279,
-      "code": "BOT_210321",
-      "fecha": "24/10/2026 09:03 PM",
-      "tipo": "Apuesta Ganada Betano",
-      "categoria": "ganada",
-      "concepto": "Boleto Betano (Escaneado)",
-      "cuota": 1.95,
-      "invertido": 50000.0,
-      "retorno": 97500.0,
-      "neto": 47500.0
-    },
-    {
-      "id": 1792892416997,
-      "code": "IMG_4483",
-      "fecha": "24/10/2026 08:40 p. m.",
-      "tipo": "Apuesta Perdida Betano",
-      "categoria": "perdida",
-      "concepto": "Combinada de 2 (BetBuilders) (Perdida #IMG_4483)",
-      "cuota": 2.02,
-      "invertido": 10000,
-      "retorno": 0,
-      "neto": -10000
-    },
-    {
-      "id": 1792892381673,
-      "code": "IMG_8197",
-      "fecha": "24/10/2026 08:39 p. m.",
-      "tipo": "Apuesta Perdida Betano",
-      "categoria": "perdida",
-      "concepto": "Simple (Perdida #IMG_8197)",
-      "cuota": 1.8,
-      "invertido": 207967,
-      "retorno": 0,
-      "neto": -207967
-    },
-    {
-      "id": 1792892118632,
-      "code": "WVQY3EYW",
-      "fecha": "24/10/2026 08:35 p. m.",
-      "tipo": "Apuesta Ganada Betano",
-      "categoria": "ganada",
-      "concepto": "Simple (Ganada #WVQY3EYW)",
-      "cuota": 1.78,
-      "invertido": 122453,
-      "retorno": 217966,
-      "neto": 95513
-    }
-  ],
+  "movimientos": [],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-24T21:03:21.279648"
+  "ultimaActualizacion": "2026-10-24T21:15:00.000Z"
 }

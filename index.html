@@ -932,12 +932,12 @@
 
           <!-- SELECTOR DE TIPO DE CASO (INCLUYE COSTO 0 / FREEBET / RESCATE) -->
           <div class="bet-type-selector">
-            <div class="type-pill active" id="pillRescate" onclick="seleccionarCaso('rescate')">
+            <div class="type-pill" id="pillRescate" onclick="seleccionarCaso('rescate')">
               <div class="type-icon">🛡️</div>
               <div class="type-name">Rescate</div>
               <div class="type-desc">Tiene costo a cubrir</div>
             </div>
-            <div class="type-pill" id="pillNormal" onclick="seleccionarCaso('normal')">
+            <div class="type-pill active" id="pillNormal" onclick="seleccionarCaso('normal')">
               <div class="type-icon">🎯</div>
               <div class="type-name">Costo $0 / Stake</div>
               <div class="type-desc">Sin deuda previa</div>
@@ -971,7 +971,7 @@
               </label>
               <input type="number" step="0.01" id="dynCuota" value="1.67" oninput="calcularEnVivo()" placeholder="1.67" style="border-color: rgba(255, 94, 0, 0.4); font-weight: 800; font-family: 'JetBrains Mono', monospace; font-size: 1.05rem;">
             </div>
-            <div class="form-group" id="grpCosto">
+            <div class="form-group" id="grpCosto" style="display: none;">
               <label>
                 <span id="lblCosto">Costo / Pérdida a Cubrir:</span>
                 <span class="hint" style="cursor: pointer; color: #38bdf8;" onclick="setCostoCero()">Poner en $0</span>
@@ -981,9 +981,9 @@
           </div>
 
           <div class="input-row">
-            <div class="form-group" id="grpMontoLibre" style="display: none;">
+            <div class="form-group" id="grpMontoLibre" style="display: block;">
               <label><span>Monto de la Apuesta ($ COP):</span></label>
-              <input type="number" id="dynMontoManual" oninput="calcularEnVivo()" placeholder="Ej: 2000">
+              <input type="number" id="dynMontoManual" value="10000" oninput="calcularEnVivo()" placeholder="Ej: 10000">
             </div>
             <div class="form-group">
               <label><span>Ganancia Extra Deseada:</span></label>
@@ -1683,8 +1683,8 @@
       if (isNaN(bankrollTotal)) bankrollTotal = 792033;
       if (isNaN(deudaRecuperacion)) deudaRecuperacion = 0;
     }
-    let currentCalculatedStake = { montoApostar: 2000, retornoBruto: 2900, beneficioLimpio: 900, cuota: 1.45 };
-    let casoActual = 'rescate'; // 'rescate' | 'normal' | 'freebet'
+    let currentCalculatedStake = { montoApostar: 10000, retornoBruto: 16700, beneficioLimpio: 6700, cuota: 1.67 };
+    let casoActual = 'normal'; // 'normal' | 'rescate' | 'freebet'
     let pasosSeleccionados = 1;
 
     function formatCOP(num) {
@@ -2742,7 +2742,7 @@
         badgeCaso.innerText = 'Modo Rescate';
         badgeCaso.style.background = 'rgba(255, 94, 0, 0.2)';
         badgeCaso.style.color = '#ff8a4c';
-        document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion || 80000);
+        document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion || 0);
       } else if (caso === 'normal') {
         document.getElementById('pillNormal').classList.add('active');
         grpCosto.style.display = 'none';
@@ -4448,7 +4448,8 @@
     });
 
     // Inicializar interfaz
-    document.getElementById('dynPerdida').value = Math.round(deudaRecuperacion || 0);
+    seleccionarCaso('normal');
+    document.getElementById('dynPerdida').value = 0;
     document.getElementById('inputAjustarBank').value = bankrollTotal;
     renderDashboard();
     renderApuestasActivas();

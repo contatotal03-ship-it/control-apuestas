@@ -998,6 +998,11 @@ def run_bot():
     init_db()
     threading.Thread(target=start_http_server, daemon=True).start()
     print("🤖 Robot de Telegram iniciando con soporte para Recuperación, Fotos y Servidor de Sincronización GitHub...")
+    # Limpiar cualquier webhook activo previo para evitar error 409 Conflict
+    try:
+        send_telegram_request("deleteWebhook", {"drop_pending_updates": False})
+    except Exception:
+        pass
     last_update_id = 0
     while True:
         try:

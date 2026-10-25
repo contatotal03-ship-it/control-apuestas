@@ -1,7 +1,19 @@
 {
-  "bankroll": 9999,
-  "deuda": 207967,
+  "bankroll": 0,
+  "deuda": 217967,
   "movimientos": [
+    {
+      "id": 1792892416997,
+      "code": "IMG_4483",
+      "fecha": "24/10/2026 08:40 p. m.",
+      "tipo": "Apuesta Perdida Betano",
+      "categoria": "perdida",
+      "concepto": "Combinada de 2 (BetBuilders) (Perdida #IMG_4483)",
+      "cuota": 2.02,
+      "invertido": 10000,
+      "retorno": 0,
+      "neto": -10000
+    },
     {
       "id": 1792892381673,
       "code": "IMG_8197",
@@ -28,5 +40,5 @@
     }
   ],
   "apuestasActivas": [],
-  "ultimaActualizacion": "2026-10-25T01:39:41.674Z"
+  "ultimaActualizacion": "2026-10-25T01:40:16.997Z"
 }
